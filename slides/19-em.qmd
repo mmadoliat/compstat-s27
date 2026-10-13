@@ -1,0 +1,494 @@
+---
+title: "The EM Algorithm 🧩"
+subtitle: "MATH 4750 / MSSC 5750 Computational Statistics"
+format: 
+  revealjs:
+    code-line-numbers: false
+    html-math-method:
+      method: mathjax
+      url: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    highlight-style: arrow
+    code-block-bg: true
+    self-contained: false
+    slide-number: c/t    
+    incremental: false
+    width: 1800
+    height: 1000
+    margin: 0.05
+    logo: "logo.png"
+    footer: "[mmadoliat.github.io/compstat-s27](https://mmadoliat.github.io/compstat-s27/)"
+    theme: ["simple", "slides.scss"]
+    multiplex: false
+    code-link: true
+    fig-cap-location: bottom
+    fig-align: center
+    transition: none ## fade slide convex concave zoom
+    title-slide-attributes:
+      data-background-image: mu-bg.png
+      data-background-size: stretch
+      data-slide-number: none
+editor: source
+execute:
+  freeze: auto
+  echo: true
+  purl: true
+---
+
+#  {visibility="hidden"}
+
+\def\bx{\mathbf{x}}
+\def\by{\mathbf{y}}
+\def\bz{\mathbf{z}}
+\def\bu{\mathbf{u}}
+\def\bv{\mathbf{v}}
+\def\bw{\mathbf{w}}
+\def\bX{\mathbf{X}}
+\def\bY{\mathbf{Y}}
+\def\bZ{\mathbf{Z}}
+\def\bU{\mathbf{U}}
+\def\bV{\mathbf{V}}
+\def\bW{\mathbf{W}}
+\def\bI{\mathbf{I}}
+\def\bH{\mathbf{H}}
+\def\bS{\mathbf{S}}
+\def\bD{\mathbf{D}}
+\def\bbeta{\boldsymbol \beta}
+\def\btheta{\boldsymbol \theta}
+\def\bmu{\boldsymbol \mu}
+\def\bSigma{\boldsymbol \Sigma}
+\def\bLambda{\boldsymbol \Lambda}
+\def\beps{\boldsymbol \epsilon}
+\def\T{\text{T}}
+\def\E{\mathrm{E}}
+\def\var{\mathrm{Var}}
+\def\cov{\mathrm{Cov}}
+\def\cor{\mathrm{Corr}}
+\def\se{\mathrm{se}}
+\def\bias{\mathrm{bias}}
+\def\mse{\mathrm{MSE}}
+\def\R{\mathbb{R}}
+\def\P{\mathrm{P}}
+\def\iid{\stackrel{\text{iid}}{\sim}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+```{r}
+#| label: setup
+#| include: false
+#| eval: true
+library(knitr)
+library(ggplot2)
+knitr::opts_chunk$set(
+    fig.asp = 0.618,
+    fig.align = "center",
+    out.width = "100%",
+    fig.retina = 3,
+    fig.path = "./images/19-em/",
+    message = FALSE,
+    warning = FALSE,
+    global.par = TRUE
+)
+options(
+  htmltools.dir.version = FALSE,
+  dplyr.print_min = 6, 
+  dplyr.print_max = 6,
+  tibble.width = 80,
+  width = 80,
+  digits = 4
+  )
+hook_output <- knitr::knit_hooks$get("output")
+knitr::knit_hooks$set(output = function(x, options) {
+  lines <- options$output.lines
+  if (is.null(lines)) {
+    return(hook_output(x, options))  # pass to default hook
+  }
+  x <- unlist(strsplit(x, "\n"))
+  more <- "..."
+  if (length(lines)==1) {        # first n lines
+    if (length(x) > lines) {
+      # truncate the output, but add ....
+      x <- c(head(x, lines), more)
+    }
+  } else {
+    x <- c(more, x[lines], more)
+  }
+  # paste these lines together
+  x <- paste(c(x, ""), collapse = "\n")
+  hook_output(x, options)
+})
+ggplot2::theme_set(ggplot2::theme_bw(base_size = 16))
+```
+
+# The Expectation-Maximization (EM) Algorithm
+
+<h2> Motivation: missing and complete data </h2>
+<h2> General specification: E-step and M-step </h2>
+<h2> Exponential family models and convergence </h2>
+<h2> General properties: monotone likelihood </h2>
+<h2> Examples: mixture models and robust estimation </h2>
+
+::: notes
+- Based on Y. Pawitan, *In All Likelihood: Statistical Modelling and Inference Using Likelihood*, Chapter 12 (previously posted as Chapt14-EM-Algorithm.pdf), plus Rizzo Example 14.5.
+- Interactive companion: the EM Shiny app in slides/apps/em (shiny::runApp("slides/apps/em")).
+:::
+
+# Motivation
+
+## Why a Statistically Motivated Algorithm?
+
+Finding MLEs usually needs a numerical method (Newton-Raphson, `optim`). The EM algorithm appears naturally when
+
+- some parts of the data are **missing**, and the analysis of the incomplete data is complicated or nonlinear;
+- it is possible to **"fill in"** the missing data, and the analysis of the **complete** data is relatively simple.
+
+Examples: missing cells, censored data, mixture models (unknown labels), random effects, hidden Markov models, latent factors.
+
+## Example 12.1: A Two-Way Table with a Missing Cell
+
+| | $j=1$ | $j=2$ | $j=3$ |
+|---|---|---|---|
+| $i=1$ | 10 | 15 | 17 |
+| $i=2$ | 22 | 23 | ? |
+
+Model $y_{ij} = \mu + \alpha_i + \beta_j + e_{ij}$, $\sum_i\alpha_i = \sum_j\beta_j = 0$, $e_{ij}\iid N(0,\sigma^2)$. The MLE is least squares with design matrix
+
+$$
+\bX = \begin{bmatrix}1&1&1&0\\1&-1&1&0\\1&1&0&1\\1&-1&0&1\\1&1&-1&-1\end{bmatrix},\qquad \hat\bbeta = (\bX^\T\bX)^{-1}\bX^\T\by.
+$$
+
+```{r}
+y <- c(10, 22, 15, 23, 17)
+X <- cbind(1, c(1, -1, 1, -1, 1), c(1, 1, 0, 0, -1), c(0, 0, 1, 1, -1))
+setNames(round(solve(crossprod(X), crossprod(X, y)), 3), c("mu", "alpha1", "beta1", "beta2"))
+```
+
+## Filling In: The EM Idea
+
+With **no** missing data the solution is trivial: $\hat\mu = \bar y$, $\hat\alpha_i = \bar y_{i\cdot} - \bar y$, $\hat\beta_j = \bar y_{\cdot j} - \bar y$.
+
+::: algo
+1. Fill in $y_{23}$ (e.g. with the average of the observed data).
+2. Compute the complete-data estimates.
+3. Re-fill: $\hat y_{23} = \hat\mu + \hat\alpha_2 + \hat\beta_3$. Repeat 2-3 until convergence.
+:::
+
+```{r}
+Y <- matrix(c(10, 22, 15, 23, 17, NA), 2); miss <- is.na(Y)
+Y[miss] <- mean(Y, na.rm = TRUE)                      # start: 17.4
+out <- NULL
+for (it in 1:25) {
+  mu <- mean(Y); a <- rowMeans(Y) - mu; b <- colMeans(Y) - mu
+  out <- rbind(out, c(it, mu, a[1], b[1], b[2]))
+  Y[miss] <- mu + a[2] + b[3]
+}
+colnames(out) <- c("iter", "mu", "alpha1", "beta1", "beta2")
+round(out[c(1, 2, 3, 10, 15, 21), ], 3)
+```
+
+The algorithm arrives at the solution **without inverting a matrix**.
+
+# General Specification
+
+## Incomplete and Complete Data
+
+- Observed (**incomplete**) data $y$; **complete** data $x$ with $y = h(x)$: $y$ is determined by $x$, not vice versa (e.g. $x = (x_1,x_2,x_3)$, $y = (x_1, x_2 + 2x_3)$).
+- We want the MLE from $L(\theta; y) = p_\theta(y)$, but $L(\theta; x) = p_\theta(x)$ is easier.
+
+::: algo
+Start with $\theta^0$. Repeat until convergence:
+
+- **E-step:** compute $Q(\theta) = Q(\theta\mid\theta^0) \equiv \E\{\log L(\theta; x)\mid y, \theta^0\}$.
+- **M-step:** maximize $Q(\theta)$ to obtain $\theta^1$; set $\theta^0\leftarrow\theta^1$.
+:::
+
+$\log L(\theta;y)$ is approximated by $Q(\theta\mid\theta^0)$; we maximize the approximation, then re-approximate.
+
+## Example 12.2: A Genetic Linkage Model (Rao, 1973)
+
+Phenotype counts $y = (125, 18, 20, 34)$ are multinomial with probabilities $\left(\frac12 + \frac\theta4,\ \frac{1-\theta}4,\ \frac{1-\theta}4,\ \frac\theta4\right)$:
+
+$$
+\log L(\theta; y) = y_1\log(2+\theta) + (y_2 + y_3)\log(1-\theta) + y_4\log\theta.
+$$
+
+No closed form. **Complete data:** split $y_1 = x_1 + x_2$ with probabilities $\frac12$ and $\frac\theta4$; then
+
+$$
+\log L(\theta; x) = (x_2 + x_5)\log\theta + (x_3+x_4)\log(1-\theta)\ \Rightarrow\ \hat\theta = \frac{x_2+x_5}{x_2+x_3+x_4+x_5}.
+$$
+
+## E-Step and M-Step for the Linkage Model
+
+- E-step: $x_2\mid y_1\sim\text{Bin}\left(y_1,\ \dfrac{\theta^0/4}{1/2 + \theta^0/4}\right)$, so $\hat x_2 = y_1\dfrac{\theta^0/4}{1/2+\theta^0/4}$.
+- M-step: $\theta^1 = \dfrac{\hat x_2 + x_5}{\hat x_2 + x_3 + x_4 + x_5}$.
+
+```{r}
+y <- c(125, 18, 20, 34)
+theta <- 4 * 34 / 197                                # start from the last category
+for (k in 1:6) {
+  x2 <- y[1] * (theta / 4) / (1 / 2 + theta / 4)       # E-step
+  theta <- (x2 + y[4]) / (x2 + y[2] + y[3] + y[4])     # M-step
+  cat(sprintf("iteration %d: theta = %.6f\n", k, theta))
+}
+optimize(function(t) y[1] * log(2 + t) + (y[2] + y[3]) * log(1 - t) + y[4] * log(t), c(0, 1), maximum = TRUE)$maximum
+```
+
+## Watching $Q(\theta\mid\theta^0)$ Approximate $\log L(\theta; y)$
+
+```{r}
+#| fig-asp: 0.4
+loglik <- function(t) y[1] * log(2 + t) + (y[2] + y[3]) * log(1 - t) + y[4] * log(t)
+Q <- function(t, t0) {                               # Q(theta | theta0) up to a constant
+  x2 <- y[1] * (t0 / 4) / (1 / 2 + t0 / 4)
+  (x2 + y[4]) * log(t) + (y[2] + y[3]) * log(1 - t)
+}
+tt <- seq(0.3, 0.9, length = 300); t0 <- 0.4
+plot(tt, loglik(tt), type = "l", lwd = 3, xlab = expression(theta), ylab = "", main = "log L(theta; y) and Q(theta | 0.4)")
+q <- Q(tt, t0); lines(tt, q - Q(t0, t0) + loglik(t0), lwd = 3, col = "#C0392B", lty = 2)
+abline(v = c(t0, tt[which.max(q)]), lty = 3); points(t0, loglik(t0), pch = 19)
+legend("bottomright", c("log L(theta; y)", "Q(theta | theta0), shifted"), col = c(1, "#C0392B"), lty = 1:2, lwd = 3, bty = "n")
+```
+
+::: notes
+- Q is shifted vertically so it touches log L at theta0; it lies below log L everywhere (minorization), so maximizing Q moves uphill on log L.
+:::
+
+# Exponential Family and Convergence
+
+## Complete Data in the Exponential Family
+
+If $\log L(\theta;x) = \theta^\T T - A(\theta)$ with sufficient statistic $T = T(x)$:
+
+- **E-step:** $Q(\theta\mid\theta^n) = \theta^\T\E(T\mid y,\theta^n) - A(\theta)$: only need $\hat T = \E\{T\mid y,\theta^n\}$.
+- **M-step:** solve $\frac{\partial}{\partial\theta}A(\theta) = \hat T$. Since $A'(\theta) = \E(T\mid\theta)$, the update satisfies
+
+$$
+\E(T\mid\theta^{n+1}) = \E(T\mid y,\theta^n), \qquad \text{and at convergence}\qquad \E(T\mid\hat\theta) = \E(T\mid y,\hat\theta).
+$$
+
+## The Missing Information Principle
+
+Taking conditional expectations of $\log L(\theta;x\mid y) = \log L(\theta;x) - \log L(\theta;y)$:
+
+$$
+\mathcal I(\theta; y) = \mathcal I(\theta; x) - \mathcal I(\theta; x\mid y).
+$$
+
+*The information in the incomplete data equals the information in the complete data minus the extra information in $x$ that is not in $y$.*
+
+Near the solution,
+
+$$
+\frac{\theta^{n+1} - \hat\theta}{\theta^n - \hat\theta}\approx\frac{\mathcal I(\hat\theta; x\mid y)}{\mathcal I(\hat\theta; x)}.
+$$
+
+- **Less missing information $\Rightarrow$ faster (linear) convergence.**
+
+```{r}
+th <- 0.5; it <- numeric(8)
+for (k in 1:8) { x2 <- y[1] * (th / 4) / (1 / 2 + th / 4); th <- (x2 + y[4]) / (x2 + y[2] + y[3] + y[4]); it[k] <- th }
+that <- it[8]; round(diff(it - that)[1:5] / (it - that)[1:5] + 1, 4)   # ratio of successive errors
+```
+
+# General Properties
+
+## EM Always Climbs the Likelihood
+
+$$
+L(\theta^{n+1}; y)\ge L(\theta^n; y). \qquad (10)
+$$
+
+**Proof sketch.** Let $h(\theta\mid\theta^0) = \E\{\log L(\theta; x\mid y)\mid y,\theta^0\}$, so $Q(\theta\mid\theta^0) = h(\theta\mid\theta^0) + \log L(\theta; y)$. By the information inequality ($\E_g\log f\le\E_g\log g$), $h(\theta\mid\theta^0)\le h(\theta^0\mid\theta^0)$. Hence
+
+$$
+\log L(\theta^1;y) - \log L(\theta^0;y) \ge Q(\theta^1\mid\theta^0) - Q(\theta^0\mid\theta^0)\ge 0.
+$$
+
+- Any $\theta^1$ with $Q(\theta^1\mid\theta^0)\ge Q(\theta^0\mid\theta^0)$ works (**generalized EM**).
+
+## Pros and Cons
+
+:::: {.columns}
+::: {.column width="50%"}
+**Advantages**
+
+- Numerically stable: monotone climbing (Newton-Raphson lacks this)
+- Handles parameter constraints automatically (each M-step is an MLE)
+- Often simple closed-form steps
+:::
+::: {.column width="50%"}
+**Disadvantages**
+
+- Convergence can be **very slow** (much missing information)
+- No immediate standard errors (use $\mathcal I(\hat\theta;y)$ numerically, Louis' method, or the bootstrap)
+- Can be trapped at local maxima or saddle points: use several starting values
+:::
+::::
+
+# Mixture Models
+
+## Finite Mixtures
+
+$$
+p_\theta(u) = \sum_{j=1}^J\pi_jp_j(u\mid\theta_j),\qquad \log L(\theta; y) = \sum_i\log\Big\{\sum_{j=1}^J\pi_jp_j(y_i\mid\theta_j)\Big\}.
+$$
+
+- Constraints $\sum\pi_j = 1$, $\pi_j\ge0$, $\sigma_j > 0$ make naive Newton-Raphson prone to failure.
+- **Complete data:** $x_i = (y_i, z_i)$ where $z_i$ is the (unobserved) component label:
+
+$$
+\log L(\theta; x_i) = \sum_{j=1}^J\big\{I(z_i = j)\log p_j(y_i\mid\theta_j) + I(z_i = j)\log\pi_j\big\}.
+$$
+
+## E-Step and M-Step for a Normal Mixture
+
+**E-step** (posterior membership probabilities, "responsibilities"):
+
+$$
+\hat p_{ij} = P(Z_i = j\mid y_i,\theta^0) = \frac{\pi_j^0p_j(y_i\mid\theta_j^0)}{\sum_k\pi_k^0p_k(y_i\mid\theta_k^0)}.
+$$
+
+**M-step** (weighted MLEs):
+
+$$
+\pi_j = \frac1n\sum_i\hat p_{ij},\qquad \mu_j = \frac{\sum_i\hat p_{ij}y_i}{\sum_i\hat p_{ij}},\qquad \sigma_j^2 = \frac{\sum_i\hat p_{ij}(y_i-\mu_j)^2}{\sum_i\hat p_{ij}}.
+$$
+
+## Example 12.3: Old Faithful Waiting Times ($N = 299$)
+
+```{r}
+em_normmix <- function(y, pi1, mu, sigma, tol = 1e-8, maxit = 1000) {
+  path <- NULL; ll_old <- -Inf
+  for (it in 1:maxit) {
+    d1 <- pi1 * dnorm(y, mu[1], sigma[1]); d2 <- (1 - pi1) * dnorm(y, mu[2], sigma[2])
+    p <- d1 / (d1 + d2)                                                       # E-step
+    pi1 <- mean(p)                                                            # M-step
+    mu <- c(sum(p * y) / sum(p), sum((1 - p) * y) / sum(1 - p))
+    sigma <- sqrt(c(sum(p * (y - mu[1])^2) / sum(p), sum((1 - p) * (y - mu[2])^2) / sum(1 - p)))
+    ll <- sum(log(d1 + d2)); path <- rbind(path, c(it, pi1, mu[1], sigma[1], mu[2], sigma[2], ll))
+    if (abs(ll - ll_old) < tol) break
+    ll_old <- ll
+  }
+  colnames(path) <- c("iter", "pi1", "mu1", "sigma1", "mu2", "sigma2", "loglik"); path
+}
+waiting <- read.csv("data/geyser.csv")$waiting
+path <- em_normmix(waiting, pi1 = 0.3, mu = c(55, 80), sigma = c(4, 7))
+round(path[c(1, 2, 3, 5, 10, 15, 25, nrow(path)), ], 3)
+all(diff(path[, "loglik"]) >= -1e-10)          # monotone!
+```
+
+## The Fitted Mixture
+
+```{r}
+#| fig-asp: 0.4
+est <- path[nrow(path), ]
+hist(waiting, prob = TRUE, breaks = 25, col = "gray90", xlab = "Waiting time (minutes)",
+     main = "Old Faithful: normal mixture by EM")
+curve(est["pi1"] * dnorm(x, est["mu1"], est["sigma1"]) + (1 - est["pi1"]) * dnorm(x, est["mu2"], est["sigma2"]),
+      add = TRUE, lwd = 3, col = "#003366", n = 300)
+curve(est["pi1"] * dnorm(x, est["mu1"], est["sigma1"]), add = TRUE, lty = 2, lwd = 2, col = "#C0392B")
+curve((1 - est["pi1"]) * dnorm(x, est["mu2"], est["sigma2"]), add = TRUE, lty = 2, lwd = 2, col = "#C0392B")
+```
+
+- Pawitan reports $(\hat\pi_1, \hat\mu_1, \hat\sigma_1, \hat\mu_2, \hat\sigma_2) = (0.308, 54.203, 4.952, 80.360, 7.508)$.
+- The $\hat p_{i1}$ are a **soft clustering** of the eruptions (compare with K-means!).
+
+## Rizzo Example 14.5: EM for the Quadratic-Form Mixture
+
+Revisit Example 14.4: $Y$ is an equal mixture of Gamma$(\tfrac12, \tfrac{1}{2\lambda_j})$, $j = 1,2,3$. The M-step for $\lambda_j$ (a gamma scale) is a weighted mean: $\lambda_j = \sum_i\hat p_{ij}y_i\big/\sum_i\hat p_{ij}$.
+
+```{r}
+set.seed(9); m <- 2000
+lambda <- c(.6, .25, .15)
+lam <- sample(lambda, size = 2000, replace = TRUE)
+y <- rgamma(m, shape = .5, rate = 1 / (2 * lam))
+N <- 10000; L <- c(.5, .4, .1); tol <- .Machine$double.eps^0.5; L.old <- L + 1
+for (j in 1:N) {
+  f1 <- dgamma(y, shape = 1/2, rate = 1 / (2 * L[1]))
+  f2 <- dgamma(y, shape = 1/2, rate = 1 / (2 * L[2]))
+  f3 <- dgamma(y, shape = 1/2, rate = 1 / (2 * L[3]))
+  py <- f1 / (f1 + f2 + f3); qy <- f2 / (f1 + f2 + f3); ry <- f3 / (f1 + f2 + f3)   # E-step
+  mu1 <- sum(y * py) / sum(py); mu2 <- sum(y * qy) / sum(qy); mu3 <- sum(y * ry) / sum(ry)   # M-step
+  L <- c(mu1, mu2, mu3); L <- L / sum(L)
+  if (sum(abs(L - L.old) / L.old) < tol) break
+  L.old <- L
+}
+list(lambda = L, iter = j, tol = tol)
+```
+
+## Choosing the Number of Components
+
+```{r}
+#| fig-asp: 0.33
+em_k <- function(y, K, maxit = 2000) {
+  q <- quantile(y, seq(0, 1, length = K + 1)); pr <- rep(1 / K, K)
+  mu <- sapply(1:K, function(j) mean(y[y >= q[j] & y <= q[j + 1]])); s <- rep(sd(y) / K, K)
+  for (it in 1:maxit) {
+    d <- sapply(1:K, function(j) pr[j] * dnorm(y, mu[j], s[j])); p <- d / rowSums(d)
+    pr <- colMeans(p); mu <- colSums(p * y) / colSums(p)
+    s <- sqrt(colSums(p * outer(y, mu, "-")^2) / colSums(p)); s <- pmax(s, 1)          # floor: waiting times are integers
+  }
+  ll <- sum(log(rowSums(sapply(1:K, function(j) pr[j] * dnorm(y, mu[j], s[j])))))
+  c(K = K, loglik = ll, BIC = -2 * ll + (3 * K - 1) * log(length(y)))
+}
+res <- t(sapply(1:5, em_k, y = waiting)); res
+plot(res[, "K"], res[, "BIC"], type = "b", pch = 19, xlab = "number of components", ylab = "BIC")
+```
+
+::: danger
+The mixture likelihood is **unbounded**: a component can collapse onto one (integer-valued!) data point with $\sigma_j\to0$. Without the floor on $\sigma_j$, BIC "chooses" a degenerate 4-component fit here.
+:::
+
+::: tip
+`mclust::Mclust()` automates this (EM + BIC over many covariance structures); the course EM Shiny app shows the iterations step by step.
+:::
+
+# Robust Estimation
+
+## EM for $t$ Regression = Iteratively Reweighted Least Squares
+
+$y_i = x_i^\T\beta + e_i$ with $e_i\sim$ scaled $t_k$. Write $e_i = \sigma z_i/\sqrt{w_i}$, $z_i\sim N(0,1)$, $w_i\sim\chi^2_k/k$. With **complete data** $(y_i, w_i)$ the problem is weighted normal regression.
+
+- **E-step:** $w_i\mid y_i\sim\chi^2_{k+1}/(k + d_i^2)$ with $d_i^2 = (y_i - \mu_i^0)^2/\sigma^{2(0)}$, so $\hat w_i = \dfrac{k+1}{k + d_i^2}$.
+- **M-step:** $\beta^1 = (\bX^\T\bW\bX)^{-1}\bX^\T\bW\by$, $\ \sigma^{2(1)} = \frac1n\sum\hat w_i(y_i - x_i^\T\beta^1)^2$.
+
+Outlying observations get **small weights**: the source of robustness. ($k$ is chosen by profile likelihood.)
+
+## Robust Regression in Action
+
+```{r}
+#| fig-asp: 0.38
+em_t_reg <- function(X, y, k = 4, maxit = 200, tol = 1e-10) {
+  beta <- qr.coef(qr(X), y); s2 <- mean((y - X %*% beta)^2)
+  for (it in 1:maxit) {
+    d2 <- as.vector((y - X %*% beta)^2 / s2)
+    w <- (k + 1) / (k + d2)                                  # E-step
+    beta_new <- solve(crossprod(X, w * X), crossprod(X, w * y))   # M-step (weighted LS)
+    s2 <- mean(w * (y - X %*% beta_new)^2)
+    if (max(abs(beta_new - beta)) < tol) break
+    beta <- beta_new
+  }
+  list(beta = as.vector(beta_new), w = w, iter = it)
+}
+set.seed(4750); n <- 60; x <- runif(n, 0, 10); yy <- 1 + 2 * x + rnorm(n)
+yy[c(5, 12, 33)] <- yy[c(5, 12, 33)] + c(25, 30, -25)       # three outliers
+X <- cbind(1, x); fit_t <- em_t_reg(X, yy, k = 3)
+plot(x, yy, pch = 19, col = gray(0.85 * (1 - fit_t$w / max(fit_t$w))), main = "EM t-regression (shade = weight)")
+abline(lm(yy ~ x), lwd = 3, col = "#C0392B"); abline(fit_t$beta, lwd = 3, col = "#003366")
+legend("topleft", c("least squares", "EM t (k = 3)", "truth: 1 + 2x"), col = c("#C0392B", "#003366", 1), lwd = c(3, 3, 1), lty = c(1, 1, 2), bty = "n")
+abline(1, 2, lty = 2)
+```
+
+## Summary
+
+::: instructions
+- EM: E-step = expected complete-data log-likelihood; M-step = maximize it.
+- Exponential-family complete data: E-step only needs $\E(T\mid y,\theta^n)$.
+- Likelihood increases at every iteration; convergence rate = fraction of missing information.
+- Mixtures: responsibilities $\hat p_{ij}$ and weighted MLEs; choose $J$ by BIC; use several starts.
+- Robust $t$ regression: EM = iteratively reweighted least squares.
+:::
+
+::: your-turn
+Run `shiny::runApp("slides/apps/em")` and fit 1-5 component mixtures to the geyser `duration` variable. Which $J$ does the "Model Selection" tab suggest?
+:::

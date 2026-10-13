@@ -1,0 +1,384 @@
+---
+title: "Ridge Regression and Lasso 🪢"
+subtitle: "MATH 4750 / MSSC 5750 Computational Statistics"
+format: 
+  revealjs:
+    code-line-numbers: false
+    html-math-method:
+      method: mathjax
+      url: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    highlight-style: arrow
+    code-block-bg: true
+    self-contained: false
+    slide-number: c/t    
+    incremental: false
+    width: 1800
+    height: 1000
+    margin: 0.05
+    logo: "logo.png"
+    footer: "[mmadoliat.github.io/compstat-s27](https://mmadoliat.github.io/compstat-s27/)"
+    theme: ["simple", "slides.scss"]
+    multiplex: false
+    code-link: true
+    fig-cap-location: bottom
+    fig-align: center
+    transition: none ## fade slide convex concave zoom
+    title-slide-attributes:
+      data-background-image: mu-bg.png
+      data-background-size: stretch
+      data-slide-number: none
+editor: source
+execute:
+  freeze: auto
+  echo: true
+  purl: true
+---
+
+#  {visibility="hidden"}
+
+\def\bx{\mathbf{x}}
+\def\by{\mathbf{y}}
+\def\bz{\mathbf{z}}
+\def\bu{\mathbf{u}}
+\def\bv{\mathbf{v}}
+\def\bw{\mathbf{w}}
+\def\bX{\mathbf{X}}
+\def\bY{\mathbf{Y}}
+\def\bZ{\mathbf{Z}}
+\def\bU{\mathbf{U}}
+\def\bV{\mathbf{V}}
+\def\bW{\mathbf{W}}
+\def\bI{\mathbf{I}}
+\def\bH{\mathbf{H}}
+\def\bS{\mathbf{S}}
+\def\bD{\mathbf{D}}
+\def\bbeta{\boldsymbol \beta}
+\def\btheta{\boldsymbol \theta}
+\def\bmu{\boldsymbol \mu}
+\def\bSigma{\boldsymbol \Sigma}
+\def\bLambda{\boldsymbol \Lambda}
+\def\beps{\boldsymbol \epsilon}
+\def\T{\text{T}}
+\def\E{\mathrm{E}}
+\def\var{\mathrm{Var}}
+\def\cov{\mathrm{Cov}}
+\def\cor{\mathrm{Corr}}
+\def\se{\mathrm{se}}
+\def\bias{\mathrm{bias}}
+\def\mse{\mathrm{MSE}}
+\def\R{\mathbb{R}}
+\def\P{\mathrm{P}}
+\def\iid{\stackrel{\text{iid}}{\sim}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+```{r}
+#| label: setup
+#| include: false
+#| eval: true
+library(knitr)
+library(ggplot2)
+knitr::opts_chunk$set(
+    fig.asp = 0.618,
+    fig.align = "center",
+    out.width = "100%",
+    fig.retina = 3,
+    fig.path = "./images/04-ridge-lasso/",
+    message = FALSE,
+    warning = FALSE,
+    global.par = TRUE
+)
+options(
+  htmltools.dir.version = FALSE,
+  dplyr.print_min = 6, 
+  dplyr.print_max = 6,
+  tibble.width = 80,
+  width = 80,
+  digits = 4
+  )
+hook_output <- knitr::knit_hooks$get("output")
+knitr::knit_hooks$set(output = function(x, options) {
+  lines <- options$output.lines
+  if (is.null(lines)) {
+    return(hook_output(x, options))  # pass to default hook
+  }
+  x <- unlist(strsplit(x, "\n"))
+  more <- "..."
+  if (length(lines)==1) {        # first n lines
+    if (length(x) > lines) {
+      # truncate the output, but add ....
+      x <- c(head(x, lines), more)
+    }
+  } else {
+    x <- c(more, x[lines], more)
+  }
+  # paste these lines together
+  x <- paste(c(x, ""), collapse = "\n")
+  hook_output(x, options)
+})
+ggplot2::theme_set(ggplot2::theme_bw(base_size = 16))
+```
+
+# Shrinkage Methods
+
+<h2> Ridge regression </h2>
+<h2> Scaling of predictors </h2>
+<h2> The lasso and variable selection </h2>
+<h2> Choosing $\lambda$ by cross-validation </h2>
+<h2> The "loss + penalty" framework </h2>
+
+::: notes
+- Based on ISLR Section 6.2. We implement ridge in closed form and the lasso by coordinate descent so that glmnet is no longer a black box.
+:::
+
+## Shrinkage Methods: Ridge Regression and Lasso
+
+- Subset selection fits least squares on a *subset* of the predictors.
+- Alternative: fit a model with **all** $p$ predictors using a technique that *constrains* or *regularizes* the coefficients, i.e., **shrinks** them toward zero.
+- Shrinking the coefficient estimates can significantly reduce their variance.
+
+Recall least squares minimizes
+$$
+\text{RSS} = \sum_{i=1}^n\Big(y_i - \beta_0 - \sum_{j=1}^p\beta_jx_{ij}\Big)^2.
+$$
+
+## Ridge Regression
+
+$$
+\hat\bbeta^R_\lambda = \argmin_{\bbeta}\;\sum_{i=1}^n\Big(y_i - \beta_0 - \sum_{j=1}^p\beta_jx_{ij}\Big)^2 + \lambda\sum_{j=1}^p\beta_j^2 = \text{RSS} + \lambda\sum_{j=1}^p\beta_j^2
+$$
+
+- $\lambda\ge0$ is a **tuning parameter**; $\lambda\sum_j\beta_j^2$ is the **shrinkage penalty** (the intercept is not penalized).
+- $\lambda = 0$: least squares. $\lambda\to\infty$: all $\beta_j\to 0$.
+- Closed form (centered $\by$, standardized $\bX$):
+
+$$
+\hat\bbeta^R_\lambda = (\bX^\T\bX + \lambda\bI)^{-1}\bX^\T\by
+$$
+
+::: fact
+$\bX^\T\bX + \lambda\bI$ is invertible for every $\lambda > 0$, even when $p > n$ or the predictors are collinear.
+:::
+
+## Ridge from Scratch: Credit Data
+
+```{r}
+library(ISLR2)
+y <- Credit$Balance
+X <- model.matrix(Balance ~ ., data = Credit)[, -1]
+n <- nrow(X)
+Xs <- scale(X) * sqrt(n / (n - 1))           # standardize with divisor n
+yc <- y - mean(y)
+ridge <- function(lambda) solve(crossprod(Xs) + lambda * diag(ncol(Xs)), crossprod(Xs, yc))
+lambdas <- 10^seq(-2, 5, length = 100)
+B <- sapply(lambdas, ridge)
+rownames(B) <- colnames(X)
+round(B[c("Income", "Limit", "Rating", "StudentYes"), c(1, 50, 100)], 2)
+```
+
+## Ridge Coefficient Paths
+
+```{r}
+#| fig-asp: 0.4
+par(mfrow = c(1, 2))
+hl <- c("Income", "Limit", "Rating", "StudentYes")
+cols <- ifelse(rownames(B) %in% hl, c("black", "red", "blue", "orange")[match(rownames(B), hl)], "gray80")
+matplot(lambdas, t(B), type = "l", lty = 1, lwd = 2, col = cols, log = "x",
+        xlab = expression(lambda), ylab = "Standardized coefficients")
+legend("topright", hl, col = c("black", "red", "blue", "orange"), lwd = 2, bty = "n")
+ratio <- apply(B, 2, function(b) sqrt(sum(b^2))) / sqrt(sum(B[, 1]^2))
+matplot(ratio, t(B), type = "l", lty = 1, lwd = 2, col = cols,
+        xlab = expression(paste("||", hat(beta)[lambda]^R, "||"[2], " / ||", hat(beta), "||"[2])), ylab = "")
+```
+
+- Left: each curve is one predictor's coefficient as a function of $\lambda$. Right: the same, indexed by $\|\hat\bbeta^R_\lambda\|_2/\|\hat\bbeta\|_2$.
+
+## Ridge Regression: Scaling of Predictors
+
+- Least squares estimates are **scale equivariant**: multiplying $X_j$ by $c$ scales $\hat\beta_j$ by $1/c$.
+- Ridge estimates can change **substantially** when a predictor is rescaled, because of the penalty $\sum_j\beta_j^2$.
+- Therefore, standardize the predictors first:
+
+$$
+\tilde x_{ij} = \frac{x_{ij}}{\sqrt{\frac1n\sum_{i=1}^n(x_{ij}-\bar x_j)^2}}
+$$
+
+```{r}
+X2 <- Xs; X2[, "Income"] <- X2[, "Income"] * 1000            # income in dollars, not $1000s
+r1 <- solve(crossprod(Xs) + 50 * diag(11), crossprod(Xs, yc))["Income", ]
+r2 <- solve(crossprod(X2) + 50 * diag(11), crossprod(X2, yc))["Income", ] * 1000
+c(standardized = r1, rescaled = r2)     # not the same fit!
+```
+
+## Why Does Ridge Help? Bias-Variance Trade-off
+
+```{r}
+#| fig-asp: 0.38
+set.seed(4750); ns <- 50; p <- 45; beta <- rnorm(p, sd = 0.4)
+Xsim <- matrix(rnorm(ns * p), ns); Xtest <- matrix(rnorm(500 * p), 500)
+ftest <- Xtest %*% beta
+lam <- 10^seq(-2, 3, length = 30)
+fits <- replicate(100, {
+  ysim <- Xsim %*% beta + rnorm(ns)
+  sapply(lam, function(l) Xtest %*% solve(crossprod(Xsim) + l * diag(p), crossprod(Xsim, ysim)))
+}, simplify = "array")                       # 500 x 30 x 100
+bias2 <- colMeans((apply(fits, c(1, 2), mean) - as.vector(ftest))^2)
+variance <- colMeans(apply(fits, c(1, 2), var))
+matplot(lam, cbind(bias2, variance, bias2 + variance), type = "l", lwd = 3, lty = 1, log = "x",
+        col = c("black", "#2E8B57", "#C2185B"), xlab = expression(lambda), ylab = "")
+legend("top", c("squared bias", "variance", "MSE"), col = c("black", "#2E8B57", "#C2185B"), lwd = 3, bty = "n")
+```
+
+::: notes
+- With p = 45 close to n = 50, least squares has huge variance. Ridge trades a little bias for a large reduction in variance.
+:::
+
+## The Lasso
+
+- Ridge always includes **all** $p$ predictors in the final model; it cannot select variables.
+- The **lasso** minimizes
+
+$$
+\sum_{i=1}^n\Big(y_i - \beta_0 - \sum_{j=1}^p\beta_jx_{ij}\Big)^2 + \lambda\sum_{j=1}^p|\beta_j| = \text{RSS} + \lambda\|\bbeta\|_1
+$$
+
+- The $\ell_1$ penalty forces some coefficients to be **exactly zero** when $\lambda$ is large enough $\Rightarrow$ **variable selection**, **sparse** models.
+- As with ridge, choosing $\lambda$ is critical: cross-validation.
+
+## Lasso by Coordinate Descent
+
+Minimizing over one coordinate $\beta_j$ with the others fixed has a closed-form **soft-thresholding** solution
+
+$$
+\beta_j \leftarrow \frac{S\!\left(\sum_i x_{ij}r_{ij},\ \lambda/2\right)}{\sum_i x_{ij}^2},\qquad S(z,\gamma) = \text{sign}(z)(|z|-\gamma)_+ ,
+$$
+
+where $r_{ij} = y_i - \sum_{k\neq j}x_{ik}\beta_k$ is the partial residual. Cycle over $j$ until convergence.
+
+```{r}
+soft <- function(z, g) sign(z) * pmax(abs(z) - g, 0)
+lasso_cd <- function(X, y, lambda, beta = rep(0, ncol(X)), tol = 1e-4, maxit = 1e4) {
+  r <- as.vector(y - X %*% beta); xx <- colSums(X^2)
+  for (it in 1:maxit) {
+    old <- beta
+    for (j in seq_along(beta)) {
+      r <- r + X[, j] * beta[j]                       # partial residual
+      beta[j] <- soft(sum(X[, j] * r), lambda / 2) / xx[j]
+      r <- r - X[, j] * beta[j]
+    }
+    if (max(abs(beta - old)) < tol) break
+  }
+  beta
+}
+```
+
+## Lasso Coefficient Paths: Credit Data
+
+```{r}
+#| fig-asp: 0.4
+lamL <- 10^seq(5, 0, length = 80); b <- rep(0, ncol(Xs)); BL <- matrix(NA, ncol(Xs), length(lamL))
+for (k in seq_along(lamL)) BL[, k] <- b <- lasso_cd(Xs, yc, lamL[k], beta = b)   # warm starts
+rownames(BL) <- colnames(X)
+matplot(lamL, t(BL), type = "l", lty = 1, lwd = 2, col = cols, log = "x",
+        xlab = expression(lambda), ylab = "Standardized coefficients")
+legend("topright", hl, col = c("black", "red", "blue", "orange"), lwd = 2, bty = "n")
+apply(BL[, c(20, 40, 60)], 2, function(b) names(which(b != 0)))
+```
+
+## Comparison with `glmnet`
+
+```{r}
+#| eval: !expr requireNamespace("glmnet", quietly = TRUE)
+library(glmnet)
+# glmnet minimizes RSS/(2n) + lambda * penalty, so lambda_glmnet = lambda / (2n)
+g <- glmnet(Xs, yc, alpha = 1, lambda = 1000 / (2 * nrow(Xs)), standardize = FALSE, intercept = FALSE,
+            thresh = 1e-14)
+cbind(ours = lasso_cd(Xs, yc, 1000, tol = 1e-10, maxit = 1e6), glmnet = as.numeric(coef(g))[-1]) |> round(3)
+```
+
+## Choosing $\lambda$ by Cross-Validation
+
+```{r}
+#| fig-asp: 0.38
+set.seed(4750)
+folds <- sample(rep(1:5, length.out = nrow(Xs))); lamCV <- 10^seq(4, 0, length = 20)
+cv_err <- rowMeans(sapply(1:5, function(k) {
+  tr <- folds != k; mx <- colMeans(Xs[tr, ]); my <- mean(yc[tr])
+  Xtr <- sweep(Xs[tr, ], 2, mx); Xte <- sweep(Xs[!tr, ], 2, mx); b <- rep(0, ncol(Xs))
+  sapply(lamCV, function(l) {                       # warm starts along the path
+    b <<- lasso_cd(Xtr, yc[tr] - my, l, beta = b)
+    mean((yc[!tr] - my - Xte %*% b)^2)
+  })
+}))
+plot(lamCV, cv_err, log = "x", type = "b", pch = 19, col = "#003366",
+     xlab = expression(lambda), ylab = "5-fold CV error")
+abline(v = lamCV[which.min(cv_err)], lty = 2, col = "red")
+```
+
+::: tip
+In practice: `cv.glmnet(X, y, alpha = 1)` does this (with the "one-standard-error" rule as an option). We study cross-validation in Chapter 8.
+:::
+
+## The Variable Selection Property of the Lasso
+
+Why does the lasso, unlike ridge, give coefficients that are **exactly** zero? Equivalent constrained problems:
+
+:::: {.columns}
+::: {.column width="50%"}
+**Lasso:** $\displaystyle\min_{\bbeta}\ \text{RSS}\quad\text{s.t.}\ \sum_{j=1}^p|\beta_j|\le s$
+:::
+::: {.column width="50%"}
+**Ridge:** $\displaystyle\min_{\bbeta}\ \text{RSS}\quad\text{s.t.}\ \sum_{j=1}^p\beta_j^2\le s$
+:::
+::::
+
+```{r}
+#| fig-asp: 0.36
+#| echo: false
+par(mfrow = c(1, 2), mar = c(2, 2, 2, 1))
+g1 <- seq(-1.5, 3, length = 200)
+rssq <- outer(g1, g1, function(a, b) 1.2 * (a - 1.7)^2 + 1.6 * (b - 1.2)^2 - 1.8 * (a - 1.7) * (b - 1.2))
+for (type in c("Lasso", "Ridge")) {
+  plot(NA, xlim = c(-1.5, 3), ylim = c(-1.5, 3), asp = 1, axes = FALSE, main = type,
+       xlab = "", ylab = "")
+  arrows(-1.5, 0, 3, 0, length = .1); arrows(0, -1.5, 0, 3, length = .1)
+  text(2.9, -0.2, expression(beta[1])); text(-0.25, 2.9, expression(beta[2]))
+  if (type == "Lasso") polygon(c(1, 0, -1, 0), c(0, 1, 0, -1), col = "cyan", border = NA)
+  else symbols(0, 0, circles = 1, inches = FALSE, add = TRUE, bg = "cyan", fg = NA)
+  contour(g1, g1, rssq, levels = c(0.3, 1, 1.9), add = TRUE, drawlabels = FALSE, col = "red", lwd = 2)
+  points(1.7, 1.2, pch = 19); text(1.85, 1.35, expression(hat(beta)))
+}
+```
+
+The RSS ellipses first touch the $\ell_1$ diamond at a **corner** (some $\beta_j = 0$); the $\ell_2$ disk has no corners.
+
+## Flexibility of the "Loss + Penalty" Framework
+
+$$
+\text{Minimize}\ \ \color{blue}{\text{Loss}} + \lambda\,\color{red}{\text{Penalty}}
+$$
+
+```{r}
+#| echo: false
+lp <- data.frame(
+  Loss = c("Hinge: $\\sum_i[1-y_if(\\mathbf x_i)]_+$", "Squared error: $\\sum_i(y_i - f(\\mathbf x_i))^2$",
+           "Squared error", "Squared error", "Hinge", "Negative log-likelihood"),
+  Penalty = c("$\\lambda\\|\\mathbf w\\|_2^2$", "$\\lambda\\|\\mathbf w\\|_2^2$", "$\\lambda\\|\\mathbf w\\|_1$",
+              "$\\lambda_1\\|\\mathbf w\\|_1 + \\lambda_2\\|\\mathbf w\\|_2^2$", "$\\lambda\\|\\mathbf w\\|_1$",
+              "$\\lambda\\|\\mathbf w\\|_1$"),
+  Algorithm = c("SVM", "Ridge regression", "Lasso", "Elastic net", "1-norm SVM", "Penalized logistic regression"))
+knitr::kable(lp, escape = FALSE)
+```
+
+## Summary
+
+::: instructions
+- Ridge: $\ell_2$ penalty, closed form $(\bX^\T\bX+\lambda\bI)^{-1}\bX^\T\by$, shrinks but keeps all predictors.
+- Lasso: $\ell_1$ penalty, soft-thresholding by coordinate descent, produces sparse models.
+- Standardize predictors before penalizing.
+- Tune $\lambda$ by cross-validation; penalization trades bias for variance.
+:::
+
+::: your-turn
+Modify `lasso_cd()` to fit the **elastic net** $\text{RSS} + \lambda[\alpha\|\bbeta\|_1 + (1-\alpha)\|\bbeta\|_2^2]$. (Hint: the update becomes $S(\cdot)/(1 + \cdots)$.)
+:::

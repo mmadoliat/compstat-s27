@@ -1,0 +1,665 @@
+---
+title: "Methods for Generating Random Variables 🎲"
+subtitle: "MATH 4750 / MSSC 5750 Computational Statistics"
+format: 
+  revealjs:
+    code-line-numbers: false
+    html-math-method:
+      method: mathjax
+      url: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    highlight-style: arrow
+    code-block-bg: true
+    self-contained: false
+    slide-number: c/t    
+    incremental: false
+    width: 1800
+    height: 1000
+    margin: 0.05
+    logo: "logo.png"
+    footer: "[mmadoliat.github.io/compstat-s27](https://mmadoliat.github.io/compstat-s27/)"
+    theme: ["simple", "slides.scss"]
+    multiplex: false
+    code-link: true
+    fig-cap-location: bottom
+    fig-align: center
+    transition: none ## fade slide convex concave zoom
+    title-slide-attributes:
+      data-background-image: mu-bg.png
+      data-background-size: stretch
+      data-slide-number: none
+editor: source
+execute:
+  freeze: auto
+  echo: true
+  purl: true
+---
+
+#  {visibility="hidden"}
+
+\def\bx{\mathbf{x}}
+\def\by{\mathbf{y}}
+\def\bz{\mathbf{z}}
+\def\bu{\mathbf{u}}
+\def\bv{\mathbf{v}}
+\def\bw{\mathbf{w}}
+\def\bX{\mathbf{X}}
+\def\bY{\mathbf{Y}}
+\def\bZ{\mathbf{Z}}
+\def\bU{\mathbf{U}}
+\def\bV{\mathbf{V}}
+\def\bW{\mathbf{W}}
+\def\bI{\mathbf{I}}
+\def\bH{\mathbf{H}}
+\def\bS{\mathbf{S}}
+\def\bD{\mathbf{D}}
+\def\bbeta{\boldsymbol \beta}
+\def\btheta{\boldsymbol \theta}
+\def\bmu{\boldsymbol \mu}
+\def\bSigma{\boldsymbol \Sigma}
+\def\bLambda{\boldsymbol \Lambda}
+\def\beps{\boldsymbol \epsilon}
+\def\T{\text{T}}
+\def\E{\mathrm{E}}
+\def\var{\mathrm{Var}}
+\def\cov{\mathrm{Cov}}
+\def\cor{\mathrm{Corr}}
+\def\se{\mathrm{se}}
+\def\bias{\mathrm{bias}}
+\def\mse{\mathrm{MSE}}
+\def\R{\mathbb{R}}
+\def\P{\mathrm{P}}
+\def\iid{\stackrel{\text{iid}}{\sim}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+```{r}
+#| label: setup
+#| include: false
+#| eval: true
+library(knitr)
+library(ggplot2)
+knitr::opts_chunk$set(
+    fig.asp = 0.618,
+    fig.align = "center",
+    out.width = "100%",
+    fig.retina = 3,
+    fig.path = "./images/06-rv-gen/",
+    message = FALSE,
+    warning = FALSE,
+    global.par = TRUE
+)
+options(
+  htmltools.dir.version = FALSE,
+  dplyr.print_min = 6, 
+  dplyr.print_max = 6,
+  tibble.width = 80,
+  width = 80,
+  digits = 4
+  )
+hook_output <- knitr::knit_hooks$get("output")
+knitr::knit_hooks$set(output = function(x, options) {
+  lines <- options$output.lines
+  if (is.null(lines)) {
+    return(hook_output(x, options))  # pass to default hook
+  }
+  x <- unlist(strsplit(x, "\n"))
+  more <- "..."
+  if (length(lines)==1) {        # first n lines
+    if (length(x) > lines) {
+      # truncate the output, but add ....
+      x <- c(head(x, lines), more)
+    }
+  } else {
+    x <- c(more, x[lines], more)
+  }
+  # paste these lines together
+  x <- paste(c(x, ""), collapse = "\n")
+  hook_output(x, options)
+})
+ggplot2::theme_set(ggplot2::theme_bw(base_size = 16))
+```
+
+# Methods for Generating Random Variables
+
+<h2> Lecture A: pseudo-random numbers, sampling, inverse transform, acceptance-rejection </h2>
+<h2> Lecture B: transformations, sums and mixtures, multivariate normal, the sphere </h2>
+
+::: notes
+- Rizzo Chapter 3. Two 75-minute lectures. Part A ends after acceptance-rejection (Example 3.8 can be started if time permits).
+- Every generator we write is validated: compare to the theoretical density/pmf, QQ-plots, and moments.
+:::
+
+# Lecture A: Inverse Transform and Acceptance-Rejection {#part-a}
+
+## Why Generate Random Variables?
+
+- Every simulation in this course (Monte Carlo integration, power studies, bootstrap, MCMC) needs random variates from a specified distribution.
+- R already has `rnorm`, `rgamma`, `rbeta`, ... **but**
+  + many distributions of interest have no built-in generator (mixtures, truncated, multivariate, user-defined),
+  + knowing *how* generators work tells you when they are efficient and when they fail.
+- Everything starts from **Uniform(0,1)** pseudo-random numbers.
+
+## Pseudo-Random Numbers
+
+- Computers produce deterministic sequences that *look* iid Uniform(0,1).
+- R's default is the Mersenne-Twister (period $2^{19937}-1$); see `?RNGkind`.
+- `set.seed()` makes a simulation reproducible.
+
+```{r}
+RNGkind()
+set.seed(4750); u1 <- runif(3)
+set.seed(4750); u2 <- runif(3)
+identical(u1, u2)
+```
+
+A toy **linear congruential generator** $x_{k+1} = (a x_k + c) \bmod m$, $u_k = x_k/m$:
+
+```{r}
+lcg <- function(n, seed = 1, a = 16807, c = 0, m = 2^31 - 1) {
+  x <- numeric(n); x[1] <- seed
+  for (k in 2:n) x[k] <- (a * x[k - 1] + c) %% m
+  x / m
+}
+round(lcg(6, seed = 4750), 4)
+```
+
+## Sampling from a Finite Population (Example 3.1)
+
+```{r}
+set.seed(4750)
+sample(0:1, size = 10, replace = TRUE)                 # toss some coins
+sample(1:100, size = 6, replace = FALSE)               # lottery numbers
+sample(toupper(letters))                               # a random permutation
+x <- sample(1:3, size = 100, replace = TRUE, prob = c(.2, .3, .5))
+table(x)                                               # multinomial sampling
+```
+
+## The Inverse Transform Method
+
+::: fact
+**Probability integral transformation.** If $X$ is continuous with cdf $F_X$, then $U = F_X(X)\sim\text{Uniform}(0,1)$.
+:::
+
+Define $F_X^{-1}(u) = \inf\{x: F_X(x) = u\}$, $0<u<1$. If $U\sim\text{Uniform}(0,1)$, then
+
+$$
+P(F_X^{-1}(U)\le x) = P(U\le F_X(x)) = F_X(x),
+$$
+
+so $F_X^{-1}(U)$ has the same distribution as $X$.
+
+::: algo
+1. Derive the inverse $F_X^{-1}(u)$.
+2. Write a command or function to compute $F_X^{-1}(u)$.
+3. For each random variate: generate $u$ from Uniform(0,1) and deliver $x = F_X^{-1}(u)$.
+:::
+
+## Example 3.2: Continuous Case
+
+Simulate from $f_X(x) = 3x^2$, $0<x<1$. Here $F_X(x) = x^3$, so $F_X^{-1}(u) = u^{1/3}$.
+
+```{r}
+#| fig-asp: 0.4
+set.seed(4750)
+n <- 1000
+u <- runif(n)
+x <- u^(1/3)
+hist(x, prob = TRUE, breaks = 30, col = "#FFCC00", main = expression(f(x) == 3 * x^2))
+y <- seq(0, 1, .01)
+lines(y, 3 * y^2, lwd = 3, col = "#003366")    # density curve f(x)
+```
+
+## Example 3.3: Exponential Distribution
+
+$X\sim\text{Exp}(\lambda)$: $F_X(x) = 1-e^{-\lambda x}$, so $F_X^{-1}(u) = -\frac1\lambda\log(1-u)$.
+
+- Since $1-U\sim U$, use the cheaper `-log(runif(n)) / lambda`.
+
+```{r}
+#| fig-asp: 0.38
+set.seed(4750); lambda <- 2
+x <- -log(runif(1e4)) / lambda
+par(mfrow = c(1, 2))
+hist(x, prob = TRUE, breaks = 50, col = "#88A0C8", main = "Exp(2) by inverse transform")
+curve(dexp(x, lambda), add = TRUE, lwd = 3, col = "red")
+qqplot(qexp(ppoints(1e4), lambda), x, pch = ".", xlab = "theoretical", ylab = "sample", main = "QQ plot")
+abline(0, 1, col = "red", lwd = 2)
+```
+
+## More Continuous Inverses
+
+```{r}
+#| echo: false
+inv <- data.frame(
+  Distribution = c("Exponential(λ)", "Pareto(a, b)", "Cauchy(θ, η)", "Logistic", "Weibull(k, λ)", "Rayleigh(σ)"),
+  `F(x)` = c("1 - exp(-λx)", "1 - (b/x)^a, x ≥ b", "1/2 + arctan((x-θ)/η)/π", "1/(1 + exp(-x))", "1 - exp(-(x/λ)^k)", "1 - exp(-x²/(2σ²))"),
+  `F⁻¹(u)` = c("-log(1-u)/λ", "b (1-u)^(-1/a)", "θ + η tan(π(u - 1/2))", "log(u/(1-u))", "λ(-log(1-u))^(1/k)", "σ sqrt(-2 log(1-u))"),
+  check.names = FALSE)
+knitr::kable(inv)
+```
+
+::: question
+Which common continuous distributions do **not** have a closed-form $F^{-1}$? (Normal, gamma, beta, ...) We need other methods for these.
+:::
+
+## Inverse Transform: Discrete Case
+
+If $\cdots < x_{i-1} < x_i < \cdots$ are the points of discontinuity of $F_X$, then $F_X^{-1}(u) = x_i$ where $F_X(x_{i-1}) < u \le F_X(x_i)$.
+
+::: algo
+For each random variate: generate $u\sim$ Uniform(0,1) and deliver $x_i$ such that $F(x_{i-1}) < u \le F(x_i)$.
+:::
+
+**Example 3.4 (two-point distribution).** $P(X=1) = p = 0.4$, $P(X=0) = 0.6$:
+
+```{r}
+set.seed(4750); n <- 1000; p <- 0.4
+u <- runif(n)
+x <- as.integer(u > 0.6)          # (u > 0.6) is a logical vector
+c(mean = mean(x), var = var(x), theory_var = p * (1 - p))
+```
+
+## Example 3.5: Geometric Distribution
+
+$f(x) = pq^x$, $x = 0,1,2,\dots$ and $F(x) = 1-q^{x+1}$. Solve $1 - q^x < u \le 1 - q^{x+1}$:
+
+$$
+x = \lceil \log(1-u)/\log(q)\rceil - 1 \quad\Rightarrow\quad x = \lfloor \log(u)/\log(q)\rfloor\ \ (\text{since } 1-U\sim U)
+$$
+
+```{r}
+#| fig-asp: 0.35
+set.seed(4750); n <- 1e4; p <- 0.25
+x <- floor(log(runif(n)) / log(1 - p))
+k <- 0:15
+barplot(rbind(table(factor(x, levels = k)) / n, dgeom(k, p)), beside = TRUE, names.arg = k,
+        col = c("#FFCC00", "#003366"), legend.text = c("generated", "dgeom"), main = "Geometric(0.25)")
+```
+
+## Example 3.6: Logarithmic Distribution
+
+$$
+f(x) = \frac{a\,\theta^x}{x},\quad x = 1,2,\dots,\quad a = \big(-\log(1-\theta)\big)^{-1}
+$$
+
+- No closed-form inverse. Store the cdf on a grid; `sum(u > F) + 1` counts how many $F(x) < u$.
+- Compute $f(x)$ as `exp(log(a) + x*log(theta) - log(x))` for numerical accuracy.
+
+```{r}
+rlogarithmic <- function(n, theta) {
+  u <- runif(n)
+  N <- ceiling(-16 / log10(theta))               # initial length of cdf vector
+  k <- 1:N
+  a <- -1 / log(1 - theta)
+  fk <- exp(log(a) + k * log(theta) - log(k))
+  Fk <- cumsum(fk)
+  x <- integer(n)
+  for (i in 1:n) {
+    x[i] <- as.integer(sum(u[i] > Fk))           # F^{-1}(u) - 1
+    while (x[i] == N) {                          # extend the cdf if needed
+      logf <- log(a) + (N + 1) * log(theta) - log(N + 1)
+      fk <- c(fk, exp(logf)); Fk <- c(Fk, Fk[N] + fk[N + 1]); N <- N + 1
+      x[i] <- as.integer(sum(u[i] > Fk))
+    }
+  }
+  x + 1
+}
+```
+
+## Checking the Logarithmic Generator
+
+```{r}
+set.seed(4750); n <- 1000; theta <- 0.5
+x <- rlogarithmic(n, theta)
+k <- sort(unique(x))
+p <- -1 / log(1 - theta) * theta^k / k
+se <- sqrt(p * (1 - p) / n)
+round(rbind(observed = table(x) / n, p = p, se = se), 3)
+```
+
+The observed relative frequencies are within about two standard errors of the theoretical probabilities.
+
+# The Acceptance-Rejection Method
+
+## The Acceptance-Rejection Method
+
+Suppose $X$ has density (pmf) $f$, $Y$ has density $g$, and there is a constant $c$ with
+
+$$
+\frac{f(t)}{g(t)} \le c\quad\text{for all } t \text{ with } f(t) > 0.
+$$
+
+::: algo
+1. Find $Y\sim g$ (easy to generate) with $f(t)/g(t)\le c$.
+2. For each variate required:
+   a. Generate $y$ from $g$.
+   b. Generate $u$ from Uniform(0,1).
+   c. If $u < f(y)/(c\,g(y))$, accept $y$ and deliver $x = y$; otherwise reject $y$ and repeat from 2a.
+:::
+
+## Why It Works, and How Efficient It Is
+
+- $P(\text{accept}\mid Y) = P\big(U < \tfrac{f(Y)}{cg(Y)}\mid Y\big) = \dfrac{f(Y)}{cg(Y)}$
+- Overall acceptance probability: $\displaystyle\sum_y \frac{f(y)}{cg(y)}g(y) = \frac1c$
+- Number of iterations until acceptance $\sim$ Geometric with mean $c$ $\Rightarrow$ want $c$ **small**.
+- **Bayes:** $P(k\mid\text{accepted}) = \dfrac{P(\text{accepted}\mid k)g(k)}{P(\text{accepted})} = \dfrac{[f(k)/(cg(k))]g(k)}{1/c} = f(k)$.
+
+```{r}
+#| fig-asp: 0.33
+#| echo: false
+par(mar = c(4, 4, 1, 1))
+curve(6 * x * (1 - x), 0, 1, lwd = 3, col = "#003366", ylim = c(0, 1.6), ylab = "", xlab = "t")
+curve(1.5 + 0 * x, add = TRUE, lwd = 3, col = "red", lty = 2)
+legend("topright", c("f(t) = 6t(1-t)", "c g(t) = 1.5"), col = c("#003366", "red"), lty = 1:2, lwd = 3, bty = "n")
+```
+
+## Example 3.7: Beta(2, 2) by Acceptance-Rejection
+
+$f(x) = 6x(1-x)$, $0<x<1$. Take $g = $ Uniform(0,1); then $f(x)/g(x)\le 6$, so $c = 6$ works (the optimal $c$ is $1.5$). Accept $x$ if
+
+$$
+\frac{f(x)}{cg(x)} = \frac{6x(1-x)}{6(1)} = x(1-x) > u.
+$$
+
+```{r}
+set.seed(4750)
+n <- 1000; k <- 0; j <- 0; y <- numeric(n)
+while (k < n) {
+  u <- runif(1)
+  j <- j + 1
+  x <- runif(1)                 # random variate from g
+  if (x * (1 - x) > u) {        # we accept x
+    k <- k + 1
+    y[k] <- x
+  }
+}
+j                               # iterations: expect about c * n = 6000
+```
+
+## Checking the Sample
+
+```{r}
+#| fig-asp: 0.38
+p <- seq(.1, .9, .1)
+Qhat <- quantile(y, p)                 # quantiles of the sample
+Q <- qbeta(p, 2, 2)                    # theoretical quantiles
+se <- sqrt(p * (1 - p) / (n * dbeta(Q, 2, 2)^2))
+round(rbind(Qhat, Q, se), 3)
+hist(y, prob = TRUE, breaks = 30, col = "#FFCC00", main = "Beta(2,2) by acceptance-rejection")
+curve(dbeta(x, 2, 2), add = TRUE, lwd = 3, col = "#003366")
+```
+
+## A Vectorized Acceptance-Rejection
+
+```{r}
+rAR <- function(n, f, rg, dg, c) {
+  out <- numeric(0); tries <- 0
+  while (length(out) < n) {
+    m <- ceiling(1.2 * c * (n - length(out)))      # propose in batches
+    y <- rg(m); u <- runif(m); tries <- tries + m
+    out <- c(out, y[u < f(y) / (c * dg(y))])
+  }
+  structure(out[1:n], acceptance = n / tries)
+}
+set.seed(4750)
+z <- rAR(1e4, f = function(x) 6 * x * (1 - x), rg = runif, dg = dunif, c = 1.5)
+attr(z, "acceptance")             # close to 1/c = 0.667
+```
+
+::: your-turn
+Use acceptance-rejection with a **Cauchy** proposal to generate standard normal variates. What is the smallest valid $c$?
+:::
+
+# Lecture B: Transformations, Mixtures, Multivariate {#part-b}
+
+## Transformation Methods
+
+Many distributions are related by transformations:
+
+1. $Z\sim N(0,1)\Rightarrow V = Z^2\sim\chi^2(1)$.
+2. $U\sim\chi^2(m)$, $V\sim\chi^2(n)$ independent $\Rightarrow F = \dfrac{U/m}{V/n}\sim F(m,n)$.
+3. $Z\sim N(0,1)$, $V\sim\chi^2(n)$ independent $\Rightarrow T = \dfrac{Z}{\sqrt{V/n}}\sim t(n)$.
+4. $U, V\iid$ Uniform(0,1) $\Rightarrow$ (**Box-Muller**)
+$$
+Z_1 = \sqrt{-2\log U}\cos(2\pi V),\quad Z_2 = \sqrt{-2\log U}\sin(2\pi V)\ \ \iid N(0,1).
+$$
+5. $U\sim\text{Gamma}(r,\lambda)$, $V\sim\text{Gamma}(s,\lambda)$ independent $\Rightarrow X = \dfrac{U}{U+V}\sim\text{Beta}(r,s)$.
+
+## Box-Muller
+
+```{r}
+#| fig-asp: 0.38
+set.seed(4750); n <- 5000
+u <- runif(n); v <- runif(n)
+z1 <- sqrt(-2 * log(u)) * cos(2 * pi * v)
+z2 <- sqrt(-2 * log(u)) * sin(2 * pi * v)
+c(mean(z1), sd(z1), cor(z1, z2))
+par(mfrow = c(1, 2))
+qqnorm(z1, pch = "."); qqline(z1, col = 2, lwd = 2)
+plot(z1, z2, pch = 20, col = "#00336640", asp = 1)
+```
+
+## Example 3.8: Beta from Gammas
+
+```{r}
+#| fig-asp: 0.35
+set.seed(4750); n <- 1000; a <- 3; b <- 2
+u <- rgamma(n, shape = a, rate = 1)
+v <- rgamma(n, shape = b, rate = 1)
+x <- u / (u + v)
+q <- qbeta(ppoints(n), a, b)
+qqplot(q, x, cex = 0.5, xlab = "Beta(3, 2)", ylab = "Sample", main = "QQ plot: U/(U+V)")
+abline(0, 1, col = "red", lwd = 2)
+```
+
+## Example 3.9: Logarithmic Distribution, Version 2
+
+If $U, V\iid$ Uniform(0,1), then $X = \left\lfloor 1 + \dfrac{\log V}{\log\big(1-(1-\theta)^U\big)}\right\rfloor\sim$ Logarithmic($\theta$).
+
+```{r}
+set.seed(4750); n <- 1000; theta <- 0.5
+u <- runif(n); v <- runif(n)
+x <- floor(1 + log(v) / log(1 - (1 - theta)^u))
+k <- 1:max(x)
+p <- -1 / log(1 - theta) * theta^k / k
+round(rbind(observed = table(factor(x, levels = k)) / n, theory = p), 3)
+```
+
+- Fully vectorized: no loops, no stored cdf. Much faster than Example 3.6.
+
+## Example 3.10: Chi-square as a Sum of Squares
+
+$\chi^2(\nu)$ = sum of $\nu$ squared iid $N(0,1)$. Fill an $n\times\nu$ matrix with $n\nu$ normals and take row sums of squares.
+
+```{r}
+set.seed(4750); n <- 1000; nu <- 2
+X <- matrix(rnorm(n * nu), n, nu)^2       # matrix of squared normals
+y <- rowSums(X)                           # sum the squared normals across each row
+c(mean = mean(y), mean_theory = nu, E_y2 = mean(y^2), E_y2_theory = 2 * nu + nu^2)
+```
+
+::: tip
+`rowSums()` and `colSums()` are much faster than `apply(X, 1, sum)` (we benchmark this in Ch 15).
+:::
+
+## Sums (Convolutions) and Mixtures
+
+- **Convolution:** $S = X_1 + \cdots + X_n$ for independent $X_j$; e.g. $\chi^2(\nu)$, Gamma$(n,\lambda)$ = sum of exponentials, NegBin$(r,p)$ = sum of geometrics.
+- **Mixture:** $F_X(x) = \sum_i \theta_i F_{X_i}(x)$ with $\theta_i > 0$, $\sum\theta_i = 1$ (discrete mixture), or $F_X(x) = \int F_{X\mid Y=y}(x) f_Y(y)\,dy$ (continuous mixture).
+
+::: alert
+A convolution adds the **random variables**; a mixture averages the **distributions**. To generate a mixture: first draw the component label, then draw from that component.
+:::
+
+## Example 3.11: Convolution vs. Mixture
+
+$X_1\sim\text{Gamma}(2,2)$, $X_2\sim\text{Gamma}(2,4)$; compare $S = X_1 + X_2$ with $F_X = 0.5F_{X_1} + 0.5F_{X_2}$.
+
+```{r}
+#| fig-asp: 0.36
+set.seed(4750); n <- 1000
+x1 <- rgamma(n, 2, 2); x2 <- rgamma(n, 2, 4)
+s <- x1 + x2                                  # the convolution
+u <- runif(n); k <- as.integer(u > 0.5)       # vector of 0's and 1's
+x <- k * x1 + (1 - k) * x2                    # the mixture
+par(mfrow = c(1, 2))
+hist(s, prob = TRUE, breaks = 30, col = "#88A0C8", main = "Convolution")
+hist(x, prob = TRUE, breaks = 30, col = "#FFCC00", main = "Mixture")
+curve(0.5 * dgamma(x, 2, 2) + 0.5 * dgamma(x, 2, 4), add = TRUE, lwd = 3)
+```
+
+## Examples 3.12 - 3.14: Mixture of Several Gammas
+
+$F_X = \sum_{j=1}^5\theta_jF_{X_j}$, $X_j\sim\text{Gamma}(r = 3, \lambda_j = 1/j)$, $\theta_j = j/15$.
+
+```{r}
+#| fig-asp: 0.36
+set.seed(4750); n <- 5000
+k <- sample(1:5, size = n, replace = TRUE, prob = (1:5) / 15)   # component labels
+rate <- 1 / k
+x <- rgamma(n, shape = 3, rate = rate)
+f <- function(x) sapply(x, function(xi) sum((1:5) / 15 * dgamma(xi, 3, 1 / (1:5))))
+hist(x, prob = TRUE, breaks = 60, col = "#FFCC00", main = "Mixture of 5 gammas", xlim = c(0, 40))
+for (j in 1:5) curve(dgamma(x, 3, 1 / j), add = TRUE, col = "gray50", lty = 2)
+curve(f(x), add = TRUE, lwd = 3, col = "#003366")
+```
+
+## Example 3.15: Poisson-Gamma Mixture
+
+If $X\mid\Lambda = \lambda\sim\text{Poisson}(\lambda)$ and $\Lambda\sim\text{Gamma}(r,\beta)$, then $X\sim\text{NegBin}(r, p = \beta/(1+\beta))$.
+
+```{r}
+set.seed(4750); n <- 1000; r <- 4; beta <- 3
+lambda <- rgamma(n, r, beta)          # lambda is random
+x <- rpois(n, lambda)                 # the mixture
+mix <- tabulate(x + 1) / n
+negbin <- round(dnbinom(0:max(x), r, beta / (1 + beta)), 3)
+se <- sqrt(negbin * (1 - negbin) / n)
+round(rbind(mix, negbin, se), 3)
+```
+
+# Multivariate Distributions
+
+## Generating Multivariate Normal Vectors
+
+If $\bZ\sim N_d(\mathbf 0,\bI_d)$ and $\bSigma = \mathbf C\mathbf C^\T$, then $\bX = \mathbf C\bZ + \bmu\sim N_d(\bmu,\bSigma)$. For a matrix of $n$ rows:
+
+$$
+\bX = \bZ\,\mathbf Q + \mathbf J\bmu^\T,\qquad \mathbf Q^\T\mathbf Q = \bSigma.
+$$
+
+Three factorizations of $\bSigma$:
+
+```{r}
+#| echo: false
+fac <- data.frame(Method = c("Spectral (Ex 3.16)", "SVD (Ex 3.17)", "Choleski (Ex 3.18)"),
+                  Factorization = c("Σ = P Λ Pᵀ,  Q = P Λ^½ Pᵀ", "Σ = U D Vᵀ,  Q = U D^½ Vᵀ", "Σ = Qᵀ Q,  Q upper triangular"),
+                  R = c("`eigen()`", "`svd()`", "`chol()`"))
+knitr::kable(fac)
+```
+
+## Examples 3.16 - 3.18: Three Generators
+
+```{r}
+rmvn.eigen <- function(n, mu, Sigma) {
+  d <- length(mu); ev <- eigen(Sigma, symmetric = TRUE)
+  Q <- ev$vectors %*% diag(sqrt(ev$values)) %*% t(ev$vectors)
+  Z <- matrix(rnorm(n * d), nrow = n, ncol = d)
+  Z %*% Q + matrix(mu, n, d, byrow = TRUE)
+}
+rmvn.svd <- function(n, mu, Sigma) {
+  d <- length(mu); S <- svd(Sigma)
+  Q <- S$u %*% diag(sqrt(S$d)) %*% t(S$v)
+  Z <- matrix(rnorm(n * d), nrow = n, ncol = d)
+  Z %*% Q + matrix(mu, n, d, byrow = TRUE)
+}
+rmvn.Choleski <- function(n, mu, Sigma) {
+  d <- length(mu); Q <- chol(Sigma)       # Choleski factorization of Sigma
+  Z <- matrix(rnorm(n * d), nrow = n, ncol = d)
+  Z %*% Q + matrix(mu, n, d, byrow = TRUE)
+}
+mu <- c(0, 1, 2); Sigma <- matrix(c(1, -.5, .5, -.5, 1, -.5, .5, -.5, 1), 3)
+set.seed(4750); X <- rmvn.Choleski(5000, mu, Sigma)
+round(colMeans(X), 2); round(cor(X), 2)
+```
+
+## Example 3.19: Comparing Performance
+
+```{r}
+set.seed(100); n <- 100; d <- 30; N <- 2000
+mu <- numeric(d); Sigma <- cov(matrix(rnorm(n * d), n, d))   # a 30 x 30 covariance
+timing <- rbind(
+  eigen    = system.time(for (i in 1:N) rmvn.eigen(n, mu, Sigma))[1:3],
+  svd      = system.time(for (i in 1:N) rmvn.svd(n, mu, Sigma))[1:3],
+  Choleski = system.time(for (i in 1:N) rmvn.Choleski(n, mu, Sigma))[1:3],
+  MASS     = system.time(for (i in 1:N) MASS::mvrnorm(n, mu, Sigma))[1:3])
+timing
+```
+
+::: notes
+- Choleski is usually fastest. MASS::mvrnorm uses the eigen decomposition (and handles positive semi-definite Sigma). mvtnorm::rmvnorm offers all three.
+:::
+
+## Example 3.20: Multivariate Normal Location Mixture
+
+$p N_d(\bmu_1,\bSigma) + (1-p)N_d(\bmu_2,\bSigma)$ with $\bmu_1 = \mathbf 0$, $\bmu_2 = (2,\dots,2)$, $\bSigma = \bI$, $p = 0.5$.
+
+```{r}
+#| fig-asp: 0.45
+loc.mix <- function(n, p, mu1, mu2, Sigma) {
+  n1 <- rbinom(1, size = n, prob = p); n2 <- n - n1
+  x <- rbind(MASS::mvrnorm(n1, mu1, Sigma), MASS::mvrnorm(n2, mu2, Sigma))
+  x[sample(1:n), ]                 # mix them
+}
+set.seed(4750)
+x <- loc.mix(1000, .5, rep(0, 4), rep(2, 4), diag(4))
+par(mfrow = c(1, 4))
+for (i in 1:4) hist(x[, i], prob = TRUE, breaks = 30, main = paste0("X", i), col = "#FFCC00", xlab = "")
+```
+
+## Example 3.21: Uniform on the Sphere
+
+If $\bZ\sim N_d(\mathbf 0,\bI_d)$, then $\bZ/\|\bZ\|$ is uniformly distributed on the unit sphere $S^{d-1}$.
+
+```{r}
+#| fig-asp: 0.45
+runif.sphere <- function(n, d) {
+  M <- matrix(rnorm(n * d), nrow = n, ncol = d)
+  L <- function(x) sqrt(sum(x * x))      # length of a vector
+  M / apply(M, 1, L)
+}
+set.seed(4750)
+par(mfrow = c(1, 2))
+X <- runif.sphere(200, 2); plot(X, asp = 1, pch = 19, cex = .6, col = "#003366", main = "d = 2")
+X <- runif.sphere(2000, 3)
+scatterplot <- function(X) {                     # a rotated 2-d view of the 3-d points
+  R <- qr.Q(qr(matrix(c(1, 2, 3, 0, 1, -1, 1, 0, 0), 3)))
+  P <- X %*% R; plot(P[, 1:2], asp = 1, pch = 20, cex = .5, col = ifelse(P[, 3] > 0, "#C2185B", "gray70"),
+                     main = "d = 3 (front hemisphere in pink)")
+}
+scatterplot(X)
+```
+
+## Python Supplement: Generators in `numpy`
+
+```{.python}
+import numpy as np
+rng = np.random.default_rng(4750)
+u = rng.uniform(size=5000)
+x = -np.log(u) / 2                                   # inverse transform: Exp(rate = 2)
+Sigma = np.array([[1, .8], [.8, 1]])
+Z = rng.standard_normal((5000, 2))
+X = Z @ np.linalg.cholesky(Sigma).T                   # Choleski: rows ~ N(0, Sigma)
+print(x.mean(), np.cov(X, rowvar=False))
+```
+
+## Summary
+
+::: instructions
+- **Inverse transform:** $X = F^{-1}(U)$; discrete: $x_i$ with $F(x_{i-1}) < u\le F(x_i)$.
+- **Acceptance-rejection:** propose from $g$, accept with probability $f/(cg)$; expected $c$ proposals per variate.
+- **Transformations:** Box-Muller, $\chi^2$, $t$, $F$, beta from gammas.
+- **Sums vs. mixtures:** add random variables vs. average distributions.
+- **Multivariate normal:** $\bZ\mathbf Q + \bmu$ with spectral, SVD, or Choleski factor; normalize normals for the sphere.
+- Always **validate** a generator: histogram + density, QQ-plot, moments, frequency tables with SEs.
+:::

@@ -1,0 +1,126 @@
+project:
+  type: website
+
+website:
+  page-navigation: true
+  title: "MATH 4750 (MSSC 5750)"
+  description: "Homepage for 'Computational Statistics' at Marquette University, Spring 2027."
+  site-url: "https://mmadoliat.github.io/compstat-s27/"
+
+  repo-url: https://github.com/mmadoliat/compstat-s27/
+  repo-actions: [edit, issue]
+
+  open-graph: true
+  twitter-card:
+    creator: "@mmadoliat"
+    image: "images/twitter-card.png"
+
+  sidebar:
+    background: "#FFCC00" # MU Yellow
+    logo: "images/logo.png"
+    pinned: true
+    align: center
+    tools:
+      - icon: github
+        href: https://github.com/mmadoliat/compstat-s27/
+        text: "GitHub organization"
+      - icon: code-square
+        href: https://mmadoliat.github.io/compstat-s27/
+        text: "Course site"
+      - icon: person-fill
+        href: https://d2l.mu.edu/
+        text: "D2L"
+
+    style: docked
+    search: true
+    collapse-level: 1
+    contents:
+      - section: "Course information"
+        contents:
+          - href: course-overview.qmd
+            text: Overview
+          - href: course-syllabus.qmd
+            text: Syllabus
+          - href: index.qmd
+            text: Schedule
+          - href: course-links.qmd
+            text: Useful links
+      - section: "Slides"
+        contents:
+          - href: slides/00-review.qmd
+            text: "0. Probability Review"
+          - href: slides/01-intro.qmd
+            text: "1. Intro. to Stat. Comp."
+          - href: slides/02-prob-stat.qmd
+            text: "2. Prob. and Stat. Review"
+          - href: slides/03-regression.qmd
+            text: "3. Linear Regression"
+          - href: slides/04-ridge-lasso.qmd
+            text: "4. Ridge and Lasso"
+          - href: slides/05-estimation.qmd
+            text: "5. MOM, MLE and Bayes"
+          - href: slides/06-rv-gen.qmd
+            text: "6. Generating RVs"
+          - href: slides/07-clustering.qmd
+            text: "7. Clustering"
+          - href: slides/08-visualization.qmd
+            text: "8. Visualization"
+          - href: slides/09-mc-integration.qmd
+            text: "9. Monte Carlo Integration"
+          - href: slides/10-shiny.qmd
+            text: "10. Shiny"
+          - href: slides/11-oop.qmd
+            text: "11. OOP in R"
+          - href: slides/12-rpkg.qmd
+            text: "12. R Packages"
+          - href: slides/13-mc-inference.qmd
+            text: "13. MC Methods in Inference"
+          - href: slides/14-bootstrap.qmd
+            text: "14. Bootstrap"
+          - href: slides/15-jackknife.qmd
+            text: "15. Jackknife & JaB"
+          - href: slides/16-density.qmd
+            text: "16. Density Estimation"
+          - href: slides/17-numerical.qmd
+            text: "17. Numerical Methods"
+          - href: slides/18-optimization.qmd
+            text: "18. Optimization"
+          - href: slides/19-em.qmd
+            text: "19. EM Algorithm"
+          - href: slides/20-programming.qmd
+            text: "20. Programming Topics"
+          - href: slides/21-dlir.qmd
+            text: "21. Deep Learning in R"
+          - href: slides/99-fdair.qmd
+            text: "Supp. Functional Data"
+      - section: "HW"
+        contents:
+          - href: hw/hw-1.qmd
+            text: HW 1
+      - section: "Computing"
+        contents:
+          - href: computing/computing-cheatsheets.qmd
+            text: Cheatsheets
+
+  page-footer:
+    right: "This page is built with [Quarto](https://quarto.org/)."
+    left: "&copy; Copyright 2027, Mehdi Maadooliat"
+    background: "#FFCC00" # Arylide Yellow
+
+format:
+  html:
+    theme:
+      light: [cosmo, style/mu.scss]
+      dark: [cosmo, style/mu.scss, style/dark.scss]
+    linkcolor: "#003366" # Glossy Grape
+    toc: true
+    code-copy: true
+    code-overflow: wrap
+    mainfont: "Atkinson Hyperlegible"
+    highlight-style: a11y-dark
+    code-link: true
+
+execute:
+  freeze: auto
+
+editor: visual

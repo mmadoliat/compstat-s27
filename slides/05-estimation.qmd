@@ -1,0 +1,361 @@
+---
+title: "Method of Moments, MLE, and Bayes 🎯"
+subtitle: "MATH 4750 / MSSC 5750 Computational Statistics"
+format: 
+  revealjs:
+    code-line-numbers: false
+    html-math-method:
+      method: mathjax
+      url: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    highlight-style: arrow
+    code-block-bg: true
+    self-contained: false
+    slide-number: c/t    
+    incremental: false
+    width: 1800
+    height: 1000
+    margin: 0.05
+    logo: "logo.png"
+    footer: "[mmadoliat.github.io/compstat-s27](https://mmadoliat.github.io/compstat-s27/)"
+    theme: ["simple", "slides.scss"]
+    multiplex: false
+    code-link: true
+    fig-cap-location: bottom
+    fig-align: center
+    transition: none ## fade slide convex concave zoom
+    title-slide-attributes:
+      data-background-image: mu-bg.png
+      data-background-size: stretch
+      data-slide-number: none
+editor: source
+execute:
+  freeze: auto
+  echo: true
+  purl: true
+---
+
+#  {visibility="hidden"}
+
+\def\bx{\mathbf{x}}
+\def\by{\mathbf{y}}
+\def\bz{\mathbf{z}}
+\def\bu{\mathbf{u}}
+\def\bv{\mathbf{v}}
+\def\bw{\mathbf{w}}
+\def\bX{\mathbf{X}}
+\def\bY{\mathbf{Y}}
+\def\bZ{\mathbf{Z}}
+\def\bU{\mathbf{U}}
+\def\bV{\mathbf{V}}
+\def\bW{\mathbf{W}}
+\def\bI{\mathbf{I}}
+\def\bH{\mathbf{H}}
+\def\bS{\mathbf{S}}
+\def\bD{\mathbf{D}}
+\def\bbeta{\boldsymbol \beta}
+\def\btheta{\boldsymbol \theta}
+\def\bmu{\boldsymbol \mu}
+\def\bSigma{\boldsymbol \Sigma}
+\def\bLambda{\boldsymbol \Lambda}
+\def\beps{\boldsymbol \epsilon}
+\def\T{\text{T}}
+\def\E{\mathrm{E}}
+\def\var{\mathrm{Var}}
+\def\cov{\mathrm{Cov}}
+\def\cor{\mathrm{Corr}}
+\def\se{\mathrm{se}}
+\def\bias{\mathrm{bias}}
+\def\mse{\mathrm{MSE}}
+\def\R{\mathbb{R}}
+\def\P{\mathrm{P}}
+\def\iid{\stackrel{\text{iid}}{\sim}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+```{r}
+#| label: setup
+#| include: false
+#| eval: true
+library(knitr)
+library(ggplot2)
+knitr::opts_chunk$set(
+    fig.asp = 0.618,
+    fig.align = "center",
+    out.width = "100%",
+    fig.retina = 3,
+    fig.path = "./images/05-estimation/",
+    message = FALSE,
+    warning = FALSE,
+    global.par = TRUE
+)
+options(
+  htmltools.dir.version = FALSE,
+  dplyr.print_min = 6, 
+  dplyr.print_max = 6,
+  tibble.width = 80,
+  width = 80,
+  digits = 4
+  )
+hook_output <- knitr::knit_hooks$get("output")
+knitr::knit_hooks$set(output = function(x, options) {
+  lines <- options$output.lines
+  if (is.null(lines)) {
+    return(hook_output(x, options))  # pass to default hook
+  }
+  x <- unlist(strsplit(x, "\n"))
+  more <- "..."
+  if (length(lines)==1) {        # first n lines
+    if (length(x) > lines) {
+      # truncate the output, but add ....
+      x <- c(head(x, lines), more)
+    }
+  } else {
+    x <- c(more, x[lines], more)
+  }
+  # paste these lines together
+  x <- paste(c(x, ""), collapse = "\n")
+  hook_output(x, options)
+})
+ggplot2::theme_set(ggplot2::theme_bw(base_size = 16))
+```
+
+# Point Estimation Techniques
+
+<h2> Method of moments (MOM) </h2>
+<h2> Likelihood and maximum likelihood (MLE) </h2>
+<h2> Numerical MLE with `optim()` </h2>
+<h2> Bayesian estimation and the bias-variance trade-off </h2>
+
+::: notes
+- Two classical methods (moments, maximum likelihood) plus the Bayesian approach. Every derivation is followed by a numerical check.
+:::
+
+## Setting
+
+- A random sample $X_1, X_2,\dots,X_n$ carries information about the unknown $\theta$.
+- Observed values are $x_1,\dots,x_n$; in boldface $\bX$ and $\bx$.
+- The joint pdf (pmf) of an iid sample is
+
+$$
+f(\bx\mid\theta) = f(x_1,\dots,x_n\mid\theta) = f(x_1\mid\theta)\times\cdots\times f(x_n\mid\theta) = \prod_{i=1}^n f(x_i\mid\theta). \qquad (1)
+$$
+
+# Method of Moments
+
+## Method of Moments Estimators
+
+- Equate population moments about the origin to the corresponding **sample moments**:
+
+$$
+m_r = \frac1n\sum_{i=1}^n X_i^r,\qquad \alpha_r = \E[X^r] = \begin{cases}\sum_x x^r\P(X=x) & \text{discrete}\\ \int_{-\infty}^\infty x^rf(x)\,dx & \text{continuous}\end{cases}
+$$
+
+- For $k$ parameters, solve the system
+
+$$
+\begin{cases}
+\alpha_1(\theta_1,\dots,\theta_k) = m_1\\
+\alpha_2(\theta_1,\dots,\theta_k) = m_2\\
+\quad\vdots\\
+\alpha_k(\theta_1,\dots,\theta_k) = m_k
+\end{cases}
+$$
+
+## MOM Examples
+
+:::: {.columns}
+::: {.column width="50%"}
+**Bernoulli / Bin$(1,\pi)$:** $\alpha_1 = \pi \stackrel{\text{set}}{=} \bar X$ $\Rightarrow$ $\tilde\pi = \bar X$.
+
+**Bin$(n,\pi)$, $m$ samples:** $\alpha_1 = n\pi \stackrel{\text{set}}{=} \bar X$ $\Rightarrow$ $\tilde\pi = \bar X/n$.
+
+**Pois$(\lambda)$:** $\alpha_1 = \lambda \stackrel{\text{set}}{=}\bar X$ $\Rightarrow$ $\tilde\lambda = \bar X$.
+:::
+::: {.column width="50%"}
+**$N(\mu,\sigma^2)$:**
+$$
+\begin{cases}
+\alpha_1 = \mu \stackrel{\text{set}}{=}\bar X = m_1\\
+\alpha_2 = \sigma^2+\mu^2 \stackrel{\text{set}}{=} \frac1n\sum X_i^2 = m_2
+\end{cases}
+$$
+$\Rightarrow\ \tilde\mu = \bar X$, $\ \tilde\sigma^2 = \frac1n\sum X_i^2 - \bar X^2 = S_u^2$.
+:::
+::::
+
+**Gamma$(r,\lambda)$:** $\E X = r/\lambda$, $\var X = r/\lambda^2$ $\Rightarrow$ $\tilde\lambda = \bar X/S_u^2$, $\tilde r = \bar X^2/S_u^2$.
+
+```{r}
+set.seed(4750); x <- rgamma(200, shape = 3, rate = 2)
+m1 <- mean(x); s2u <- mean(x^2) - m1^2
+c(r_mom = m1^2 / s2u, lambda_mom = m1 / s2u)
+```
+
+# Maximum Likelihood
+
+## Likelihood and Maximum Likelihood Estimators
+
+- Choose the value of $\theta$ that makes the observed data **most likely** under the model.
+- Once $\bx$ is observed, the **likelihood function** of $\theta$ is
+
+$$
+L(\theta\mid\bx) = f(\bx\mid\theta) = \prod_{i=1}^n f(x_i\mid\theta). \qquad (2)
+$$
+
+- Same formula as (1), but (1) is a function of $\bx$ for fixed $\theta$; (2) is a function of $\theta$ for fixed $\bx$. (In the discrete case $L$ is no longer a probability.)
+- The maximizer $\hat\theta(\bx)$ is the **maximum likelihood estimate**; the statistic $\hat\theta(\bX)$ is the **MLE**.
+
+## Log-Likelihood vs. Likelihood
+
+- Products are hard; the **log-likelihood** turns them into sums. $\log$ is increasing, so the maximizer is the same:
+
+$$
+\frac{\partial \ln L(\theta\mid\bx)}{\partial\theta} = 0. \qquad (3)
+$$
+
+- Products of many small densities **underflow** in floating point; sums of logs do not.
+
+```{r}
+set.seed(4750); x <- rnorm(2000, mean = 5)
+c(likelihood = prod(dnorm(x, 5)), loglik = sum(dnorm(x, 5, log = TRUE)))
+```
+
+## MLE Examples
+
+- **Poisson:** $\ell(\lambda) = -n\lambda + \sum x_i\log\lambda - \sum\log x_i!$, $\ \ell'(\lambda) = -n + \sum x_i/\lambda = 0$ $\Rightarrow$ $\hat\lambda = \bar x$.
+- **Exponential$(\lambda)$:** $\ell(\lambda) = n\log\lambda - \lambda\sum x_i$ $\Rightarrow$ $\hat\lambda = 1/\bar x$.
+- **Uniform$(0,\theta)$:** $L(\theta) = \theta^{-n}\,\mathbf 1\{\theta\ge x_{(n)}\}$ is decreasing on $[x_{(n)},\infty)$ $\Rightarrow$ $\hat\theta = x_{(n)}$ (calculus does not help here!).
+
+```{r}
+#| fig-asp: 0.33
+set.seed(1); u <- runif(10, 0, 3)
+th <- seq(2, 5, length = 400)
+plot(th, ifelse(th >= max(u), th^-10, 0), type = "l", lwd = 3, col = "#003366",
+     xlab = expression(theta), ylab = expression(L(theta)), main = "Uniform(0, theta) likelihood")
+abline(v = max(u), lty = 2, col = "red")
+```
+
+## Likelihood and Log-Likelihood for a Normal Mean
+
+```{r}
+#| fig-asp: 0.38
+set.seed(4750)
+n <- 10; mus <- seq(0, 10, length = 100); mu <- 5; x <- rnorm(n, mean = mu)
+Like    <- function(mu, data = x) prod(dnorm(data, mean = mu))
+logLike <- function(mu, data = x) sum(dnorm(data, mean = mu, log = TRUE))
+max.L    <- optim(1, Like,    data = x, method = "BFGS", control = list(fnscale = -1))
+max.logL <- optim(1, logLike, data = x, method = "BFGS", control = list(fnscale = -1))
+L <- sapply(mus, Like); logL <- sapply(mus, logLike)
+par(mfrow = c(1, 2))
+plot(mus, L, type = "l", lwd = 2); abline(v = max.L$par, col = 2, lwd = 2)
+plot(mus, logL, type = "l", lwd = 2); abline(v = max.logL$par, col = 2, lwd = 2)
+c(optim_L = max.L$par, optim_logL = max.logL$par, xbar = mean(x))
+```
+
+::: danger
+Maximizing $L$ directly fails here: at the starting value $L(1)\approx 10^{-35}$ is numerically flat, so `optim` never moves. Always maximize $\log L$.
+:::
+
+::: notes
+- fnscale = -1 turns optim into a maximizer. Brent's method (method = "Brent", with bounds) is a good choice for 1-d problems.
+:::
+
+## Numerical MLE: Gamma Distribution
+
+There is no closed form for the Gamma MLE of $r$. Maximize numerically, starting at the MOM estimate:
+
+$$
+\ell(r,\lambda) = nr\log\lambda - n\log\Gamma(r) + (r-1)\sum\log x_i - \lambda\sum x_i
+$$
+
+```{r}
+set.seed(4750); x <- rgamma(200, shape = 3, rate = 2)
+nll <- function(th) -sum(dgamma(x, shape = th[1], rate = th[2], log = TRUE))
+mom <- c(mean(x)^2 / var(x), mean(x) / var(x))
+fit <- optim(mom, nll, method = "L-BFGS-B", lower = c(1e-6, 1e-6), hessian = TRUE)
+rbind(MOM = mom, MLE = fit$par, SE = sqrt(diag(solve(fit$hessian))))
+```
+
+- The inverse of the observed information (Hessian of $-\ell$) estimates the covariance of the MLE.
+
+## MOM vs. MLE: Which Is Better? Simulate!
+
+```{r}
+#| fig-asp: 0.36
+set.seed(4750)
+est <- t(replicate(1000, {
+  x <- rgamma(50, shape = 3, rate = 2)
+  mom <- mean(x)^2 / var(x)
+  mle <- optim(c(mom, mean(x) / var(x)), function(th) -sum(dgamma(x, th[1], th[2], log = TRUE)),
+               method = "L-BFGS-B", lower = c(1e-6, 1e-6))$par[1]
+  c(MOM = mom, MLE = mle)
+}))
+rbind(bias = colMeans(est) - 3, sd = apply(est, 2, sd), MSE = colMeans((est - 3)^2))
+boxplot(est, horizontal = TRUE, col = c("#FFCC00", "#88A0C8")); abline(v = 3, lty = 2)
+```
+
+# Bayesian Estimation
+
+## Bayesian Methods
+
+- Information from the data $x$, a realization of $X\sim f(x\mid\theta)$,
+- is combined with prior information in a **prior distribution** $\pi(\theta)$,
+- and summarized in the **posterior distribution** (Bayes' theorem)
+
+$$
+\pi(\theta\mid x) = \frac{f(x\mid\theta)\pi(\theta)}{\int f(x\mid\theta)\pi(\theta)\,d\theta} = \frac{f(x\mid\theta)\pi(\theta)}{m(x)},
+$$
+
+where $m(x) = \int f(x\mid\theta)\pi(\theta)\,d\theta$ is the **marginal density** of $X$.
+
+## Example: Binomial Bayes Estimator
+
+- For $X\sim\text{Bin}(n,p)$, the conjugate prior is $\text{Beta}(a,b)$; posterior $\text{Beta}(a+x, b+n-x)$.
+- The classical Bayes estimator (posterior mean) is
+
+$$
+\begin{aligned}
+\delta^\pi &= \frac{\Gamma(a+b+n)}{\Gamma(a+x)\Gamma(n-x+b)}\int_0^1 p\, p^{x+a-1}(1-p)^{n-x+b-1}\,dp\\
+&= \frac{n}{a+b+n}\left(\frac xn\right) + \frac{a+b}{a+b+n}\left(\frac{a}{a+b}\right).
+\end{aligned}
+$$
+
+- A weighted average of the MLE $x/n$ and the prior mean $a/(a+b)$: a **biased** estimator of $p$.
+
+```{r}
+n <- 20; x <- 14; a <- 2; b <- 2
+post_mean_numeric <- integrate(function(p) p * dbeta(p, a + x, b + n - x), 0, 1)$value
+c(numeric = post_mean_numeric, formula = n / (a + b + n) * x / n + (a + b) / (a + b + n) * a / (a + b))
+```
+
+## The Variance/Bias Trade-off
+
+- $\mse = \E(\delta^\pi - p)^2 = \text{Variance} + \text{Bias}^2$ measures average closeness to the parameter.
+- A small increase in bias can yield a large decrease in variance:
+
+$$
+\var\delta^\pi = \left(\frac{n}{a+b+n}\right)^2\var\!\left(\frac xn\right) < \var\!\left(\frac xn\right).
+$$
+
+```{r}
+#| fig-asp: 0.36
+p <- seq(0, 1, length = 200); n <- 20; a <- b <- 2; w <- n / (a + b + n)
+mse_mle <- p * (1 - p) / n
+mse_bayes <- w^2 * p * (1 - p) / n + ((1 - w) * (a / (a + b) - p))^2
+matplot(p, cbind(mse_mle, mse_bayes), type = "l", lty = 1, lwd = 3, col = c("black", "#C2185B"),
+        ylab = "MSE", main = "MLE vs Bayes (Beta(2,2) prior), n = 20")
+legend("top", c("MLE x/n", "Bayes posterior mean"), col = c("black", "#C2185B"), lwd = 3, bty = "n")
+```
+
+::: question
+For which values of $p$ does the Bayes estimator win? How does the picture change with $n = 200$?
+:::
+
+## Summary
+
+::: instructions
+- **MOM:** match moments; simple, often a good starting value.
+- **MLE:** maximize $\log L$; invariant, asymptotically efficient; often needs numerical optimization (`optim`, Ch 14).
+- **Bayes:** posterior $\propto$ likelihood $\times$ prior; posterior mean shrinks the MLE toward the prior mean.
+- Compare estimators by simulation: bias, SE, MSE.
+:::

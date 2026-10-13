@@ -1,0 +1,459 @@
+---
+title: "The Bootstrap 👢"
+subtitle: "MATH 4750 / MSSC 5750 Computational Statistics"
+format: 
+  revealjs:
+    code-line-numbers: false
+    html-math-method:
+      method: mathjax
+      url: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    highlight-style: arrow
+    code-block-bg: true
+    self-contained: false
+    slide-number: c/t    
+    incremental: false
+    width: 1800
+    height: 1000
+    margin: 0.05
+    logo: "logo.png"
+    footer: "[mmadoliat.github.io/compstat-s27](https://mmadoliat.github.io/compstat-s27/)"
+    theme: ["simple", "slides.scss"]
+    multiplex: false
+    code-link: true
+    fig-cap-location: bottom
+    fig-align: center
+    transition: none ## fade slide convex concave zoom
+    title-slide-attributes:
+      data-background-image: mu-bg.png
+      data-background-size: stretch
+      data-slide-number: none
+editor: source
+execute:
+  freeze: auto
+  echo: true
+  purl: true
+---
+
+#  {visibility="hidden"}
+
+\def\bx{\mathbf{x}}
+\def\by{\mathbf{y}}
+\def\bz{\mathbf{z}}
+\def\bu{\mathbf{u}}
+\def\bv{\mathbf{v}}
+\def\bw{\mathbf{w}}
+\def\bX{\mathbf{X}}
+\def\bY{\mathbf{Y}}
+\def\bZ{\mathbf{Z}}
+\def\bU{\mathbf{U}}
+\def\bV{\mathbf{V}}
+\def\bW{\mathbf{W}}
+\def\bI{\mathbf{I}}
+\def\bH{\mathbf{H}}
+\def\bS{\mathbf{S}}
+\def\bD{\mathbf{D}}
+\def\bbeta{\boldsymbol \beta}
+\def\btheta{\boldsymbol \theta}
+\def\bmu{\boldsymbol \mu}
+\def\bSigma{\boldsymbol \Sigma}
+\def\bLambda{\boldsymbol \Lambda}
+\def\beps{\boldsymbol \epsilon}
+\def\T{\text{T}}
+\def\E{\mathrm{E}}
+\def\var{\mathrm{Var}}
+\def\cov{\mathrm{Cov}}
+\def\cor{\mathrm{Corr}}
+\def\se{\mathrm{se}}
+\def\bias{\mathrm{bias}}
+\def\mse{\mathrm{MSE}}
+\def\R{\mathbb{R}}
+\def\P{\mathrm{P}}
+\def\iid{\stackrel{\text{iid}}{\sim}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+```{r}
+#| label: setup
+#| include: false
+#| eval: true
+library(knitr)
+library(ggplot2)
+knitr::opts_chunk$set(
+    fig.asp = 0.618,
+    fig.align = "center",
+    out.width = "100%",
+    fig.retina = 3,
+    fig.path = "./images/14-bootstrap/",
+    message = FALSE,
+    warning = FALSE,
+    global.par = TRUE
+)
+options(
+  htmltools.dir.version = FALSE,
+  dplyr.print_min = 6, 
+  dplyr.print_max = 6,
+  tibble.width = 80,
+  width = 80,
+  digits = 4
+  )
+hook_output <- knitr::knit_hooks$get("output")
+knitr::knit_hooks$set(output = function(x, options) {
+  lines <- options$output.lines
+  if (is.null(lines)) {
+    return(hook_output(x, options))  # pass to default hook
+  }
+  x <- unlist(strsplit(x, "\n"))
+  more <- "..."
+  if (length(lines)==1) {        # first n lines
+    if (length(x) > lines) {
+      # truncate the output, but add ....
+      x <- c(head(x, lines), more)
+    }
+  } else {
+    x <- c(more, x[lines], more)
+  }
+  # paste these lines together
+  x <- paste(c(x, ""), collapse = "\n")
+  hook_output(x, options)
+})
+ggplot2::theme_set(ggplot2::theme_bw(base_size = 16))
+```
+
+# The Bootstrap
+
+<h2> The empirical distribution and bootstrap samples </h2>
+<h2> Bootstrap estimates of standard error and bias </h2>
+<h2> Bootstrap confidence intervals: normal, basic, percentile, t, BCa </h2>
+<h2> Application: cross-validation and model selection </h2>
+
+::: notes
+- Rizzo Sections 8.1, 8.3-8.5. The jackknife (8.2) and jackknife-after-bootstrap (9.1) are in the next deck.
+- Data: law (LSAT/GPA, 15 law schools) and patch (8 subjects) from the bootstrap package, entered directly so the slides need no extra package.
+:::
+
+```{r}
+#| include: false
+library(boot)
+law <- data.frame(
+  LSAT = c(576, 635, 558, 578, 666, 580, 555, 661, 651, 605, 653, 575, 545, 572, 594),
+  GPA = c(3.39, 3.30, 2.81, 3.03, 3.44, 3.07, 3.00, 3.43, 3.36, 3.13, 3.12, 2.74, 2.76, 2.88, 2.96))
+patch <- data.frame(
+  subject = 1:8,
+  z = c(8406, 2342, 8187, 8459, 4795, 3516, 4796, 10238),         # oldpatch - placebo
+  y = c(-1200, 2601, -2705, 1982, -1290, 351, -638, -2719))       # newpatch - oldpatch
+```
+
+## Why the Bootstrap?
+
+- In Chapter 7 we simulated from a **known** model to study a procedure.
+- In practice, $F$ is **unknown**. The bootstrap (Efron, 1979) replaces $F$ with the **empirical distribution** $F_n$ and resamples the data.
+- "Pulling oneself up by one's bootstraps": estimating sampling variability from a **single** sample, without formulas and without replicate data sets.
+
+:::: {.columns}
+::: {.column width="50%"}
+**Real world**
+
+$F\ \longrightarrow\ x = (x_1,\dots,x_n)\ \longrightarrow\ \hat\theta = s(x)$
+:::
+::: {.column width="50%"}
+**Bootstrap world**
+
+$F_n\ \longrightarrow\ x^* = (x_1^*,\dots,x_n^*)\ \longrightarrow\ \hat\theta^* = s(x^*)$
+:::
+::::
+
+## Example 8.1: $F_n$ and Bootstrap Samples
+
+$x = \{2,2,1,1,5,4,4,3,1,2\}$: resampling selects 1, 2, 3, 4, 5 with probabilities 0.3, 0.3, 0.1, 0.2, 0.1, i.e., the cdf of a bootstrap observation **is** $F_n$.
+
+```{r}
+x <- c(2, 2, 1, 1, 5, 4, 4, 3, 1, 2)
+table(x) / length(x)
+set.seed(4750)
+xstar <- replicate(10000, sample(x, replace = TRUE))
+table(xstar) / length(xstar)
+```
+
+::: question
+How many distinct bootstrap samples of size $n$ are there? (Answer: $\binom{2n-1}{n}$; for $n = 15$ that is 77,558,760.)
+:::
+
+## Bootstrap Estimate of Standard Error
+
+::: algo
+1. For $b = 1,\dots,B$: draw $x^{*(b)}$ by sampling **with replacement** from $x$; compute $\hat\theta^{(b)} = s(x^{*(b)})$.
+2. $\widehat{\se}_B(\hat\theta^*) = \sqrt{\dfrac1{B-1}\sum_{b=1}^B\big(\hat\theta^{(b)} - \bar{\hat\theta}^*\big)^2}$.
+:::
+
+- $B = 50$ to $200$ is usually enough for an SE; confidence intervals need $B\ge 1000$.
+
+## Example 8.2: SE of the Correlation (Law Data)
+
+```{r}
+#| fig-asp: 0.33
+B <- 200; n <- nrow(law); R <- numeric(B)
+set.seed(4750)
+for (b in 1:B) {
+  i <- sample(1:n, size = n, replace = TRUE)       # randomly select the indices
+  LSAT <- law$LSAT[i]; GPA <- law$GPA[i]
+  R[b] <- cor(LSAT, GPA)
+}
+c(theta.hat = cor(law$LSAT, law$GPA), se.R = sd(R))
+hist(R, prob = TRUE, breaks = 25, col = "#FFCC00", main = "Bootstrap replicates of r")
+```
+
+- Normal theory gives $\se(\hat\rho)\approx(1-\hat\rho^2)/\sqrt{n-3}$ = `r round((1 - cor(law)[1, 2]^2) / sqrt(12), 3)`.
+
+## Example 8.3: Using `boot()`
+
+```{r}
+r <- function(x, i) {
+  cor(x[i, 1], x[i, 2])         # want correlation of columns 1 and 2
+}
+set.seed(4750)
+obj <- boot(data = law, statistic = r, R = 2000)
+obj
+```
+
+- The statistic **must** take the data and an index vector `i` as its first two arguments.
+- `obj$t0` is $\hat\theta$; `obj$t` is the vector of $B$ replicates.
+
+## Bootstrap Estimate of Bias
+
+$$
+\bias(\hat\theta) = \E[\hat\theta] - \theta,\qquad \widehat{\bias}_B(\hat\theta) = \bar{\hat\theta}^* - \hat\theta.
+$$
+
+**Example 8.4 (law data):**
+
+```{r}
+theta.hat <- cor(law$LSAT, law$GPA)
+c(bias = mean(obj$t) - theta.hat, se = sd(obj$t))
+```
+
+- Rule of thumb: if $|\widehat\bias|/\widehat{\se} < 0.25$, bias correction is usually not worth it (it increases variance).
+
+## Example 8.5: Bias of a Ratio Estimate (Patch Data)
+
+Eight subjects wore a placebo, an old, and a new hormone patch. Bioequivalence holds if $|\theta|\le 0.20$, where
+
+$$
+\theta = \frac{\E(\text{new}) - \E(\text{old})}{\E(\text{old}) - \E(\text{placebo})},\qquad \hat\theta = \bar y/\bar z.
+$$
+
+```{r}
+n <- nrow(patch); B <- 2000; theta.b <- numeric(B)
+theta.hat <- mean(patch$y) / mean(patch$z)
+set.seed(4750)
+for (b in 1:B) {
+  i <- sample(1:n, size = n, replace = TRUE)
+  theta.b[b] <- mean(patch$y[i]) / mean(patch$z[i])
+}
+bias <- mean(theta.b) - theta.hat; se <- sd(theta.b)
+print(list(est = theta.hat, bias = bias, se = se, cv = bias / se))
+```
+
+# Bootstrap Confidence Intervals
+
+## Four Simple Intervals
+
+With replicates $\hat\theta^{(1)},\dots,\hat\theta^{(B)}$ and quantiles $\hat\theta^*_{q}$:
+
+- **Standard normal:** $\hat\theta\pm z_{1-\alpha/2}\,\widehat{\se}(\hat\theta)$ (assumes $\hat\theta$ approximately normal, unbiased)
+- **Basic:** $\big(2\hat\theta - \hat\theta^*_{1-\alpha/2},\ 2\hat\theta - \hat\theta^*_{\alpha/2}\big)$ (pivot $\hat\theta - \theta$)
+- **Percentile:** $\big(\hat\theta^*_{\alpha/2},\ \hat\theta^*_{1-\alpha/2}\big)$ (transformation respecting)
+- **Bootstrap $t$:** $\big(\hat\theta - t^*_{1-\alpha/2}\widehat{\se}(\hat\theta),\ \hat\theta - t^*_{\alpha/2}\widehat{\se}(\hat\theta)\big)$, with $t^{(b)} = (\hat\theta^{(b)} - \hat\theta)/\widehat{\se}(\hat\theta^{(b)})$
+
+## Why the Basic Interval Has That Form
+
+If the distribution of $\hat\theta - \theta$ is approximated by that of $\hat\theta^* - \hat\theta$:
+
+$$
+1-\alpha \approx P\big(\hat\theta^*_{\alpha/2} - \hat\theta \le \hat\theta - \theta \le \hat\theta^*_{1-\alpha/2} - \hat\theta\big) = P\big(2\hat\theta - \hat\theta^*_{1-\alpha/2}\le\theta\le 2\hat\theta - \hat\theta^*_{\alpha/2}\big).
+$$
+
+```{r}
+alpha <- 0.05; th <- obj$t0; q <- quantile(obj$t, c(alpha / 2, 1 - alpha / 2), type = 1)
+rbind(normal = th + c(-1, 1) * qnorm(1 - alpha / 2) * sd(obj$t),
+      basic = 2 * th - rev(q), percentile = q)
+```
+
+## Examples 8.9 - 8.10: `boot.ci()`
+
+```{r}
+theta.boot <- function(dat, ind) mean(dat[ind, "y"]) / mean(dat[ind, "z"])
+set.seed(4750)
+boot.patch <- boot(patch, statistic = theta.boot, R = 2000)
+boot.ci(boot.patch, type = c("basic", "norm", "perc"))
+```
+
+::: question
+Is bioequivalence ($|\theta|\le 0.2$) supported by these intervals?
+:::
+
+## Visualizing the Intervals (Law Data)
+
+```{r}
+#| fig-asp: 0.38
+ci <- boot.ci(obj, type = c("norm", "basic", "perc", "bca"))
+hist(obj$t, prob = TRUE, breaks = 40, col = "gray90", main = "Law data: bootstrap distribution of r", xlab = "r*")
+abline(v = obj$t0, lwd = 3)
+cols <- c("#2E5BBA", "#27AE60", "#C0392B", "#C2185B"); yy <- c(3.2, 2.7, 2.2, 1.7)
+segs <- rbind(ci$normal[2:3], ci$basic[4:5], ci$percent[4:5], ci$bca[4:5])
+for (k in 1:4) segments(segs[k, 1], yy[k], segs[k, 2], yy[k], lwd = 6, col = cols[k])
+legend("topleft", c("normal", "basic", "percentile", "BCa"), col = cols, lwd = 6, bty = "n")
+```
+
+::: notes
+- The correlation is bounded by 1 and its distribution is skewed: the normal and basic intervals extend beyond 1 or misplace the skewness.
+:::
+
+## Example 8.11: The Bootstrap $t$ Interval
+
+Each replicate needs its own SE: a **bootstrap inside the bootstrap**.
+
+```{r}
+boot.t.ci <- function(x, B = 500, R = 100, level = .95, statistic) {
+  x <- as.matrix(x); n <- nrow(x)
+  stat <- numeric(B); se <- numeric(B)
+  boot.se <- function(x, R, f) {               # local function to compute the bootstrap SE
+    x <- as.matrix(x); m <- nrow(x)
+    th <- replicate(R, expr = { i <- sample(1:m, size = m, replace = TRUE); f(x[i, ]) })
+    return(sd(th))
+  }
+  for (b in 1:B) {
+    j <- sample(1:n, size = n, replace = TRUE)
+    y <- x[j, ]
+    stat[b] <- statistic(y)
+    se[b] <- boot.se(y, R = R, f = statistic)
+  }
+  stat0 <- statistic(x)
+  t.stats <- (stat - stat0) / se
+  se0 <- sd(stat)
+  alpha <- 1 - level
+  Qt <- quantile(t.stats, c(alpha / 2, 1 - alpha / 2), type = 1)
+  names(Qt) <- rev(names(Qt))
+  rev(stat0 - Qt * se0)
+}
+```
+
+## Example 8.12: Bootstrap $t$ for the Patch Ratio
+
+```{r}
+dat <- as.matrix(patch[, c("y", "z")])
+stat <- function(dat) mean(dat[, 1]) / mean(dat[, 2])
+set.seed(4750)
+ci <- boot.t.ci(dat, statistic = stat, B = 2000, R = 200)
+print(ci)
+```
+
+- Cost: $B\times R = 400{,}000$ evaluations of the statistic. Second-order accurate, but can be erratic for small $n$ and is **not** transformation-respecting.
+
+## Better Intervals: BCa
+
+**B**ias-**c**orrected and **a**ccelerated percentile interval: use adjusted percentiles $\hat\theta^*_{\alpha_1}, \hat\theta^*_{\alpha_2}$,
+
+$$
+\alpha_1 = \Phi\!\left(\hat z_0 + \frac{\hat z_0 + z_{\alpha/2}}{1 - \hat a(\hat z_0 + z_{\alpha/2})}\right),\quad
+\alpha_2 = \Phi\!\left(\hat z_0 + \frac{\hat z_0 + z_{1-\alpha/2}}{1 - \hat a(\hat z_0 + z_{1-\alpha/2})}\right),
+$$
+
+- **Bias correction** $\hat z_0 = \Phi^{-1}\!\left(\frac1B\sum_b I(\hat\theta^{(b)} < \hat\theta)\right)$ (median bias of $\hat\theta^*$)
+- **Acceleration** (from the jackknife, next lecture) $\hat a = \dfrac{\sum_i(\bar\theta_{(\cdot)} - \theta_{(i)})^3}{6\big[\sum_i(\bar\theta_{(\cdot)} - \theta_{(i)})^2\big]^{3/2}}$
+
+::: fact
+BCa is transformation respecting **and** second-order accurate. If $\hat z_0 = \hat a = 0$ it reduces to the percentile interval.
+:::
+
+## Examples 8.13 - 8.15: Computing BCa
+
+```{r}
+boot.BCa <- function(x, th0, th, stat, conf = .95) {
+  x <- as.matrix(x); n <- nrow(x); N <- 1:n
+  alpha <- (1 + c(-conf, conf)) / 2; zalpha <- qnorm(alpha)
+  z0 <- qnorm(sum(th < th0) / length(th))                       # bias correction
+  th.jack <- numeric(n)                                         # acceleration via the jackknife
+  for (i in 1:n) th.jack[i] <- stat(x, N[-i])
+  L <- mean(th.jack) - th.jack
+  a <- sum(L^3) / (6 * sum(L^2)^1.5)
+  adj.alpha <- pnorm(z0 + (z0 + zalpha) / (1 - a * (z0 + zalpha)))
+  limits <- quantile(th, adj.alpha, type = 6)
+  list("est" = th0, "BCa" = limits)
+}
+stat <- function(dat, index) mean(dat[index, 1]) / mean(dat[index, 2])
+set.seed(4750)
+th <- replicate(2000, { i <- sample(1:8, 8, replace = TRUE); stat(dat, i) })
+boot.BCa(dat, th0 = stat(dat, 1:8), th = th, stat = stat)
+boot.ci(boot.patch, type = "bca")
+```
+
+# Application: Cross-Validation
+
+## Example 8.16: Model Selection (Iron Data)
+
+53 measurements of iron content by a chemical and a magnetic method (`ironslag` in DAAG). Four candidate models:
+
+1. Linear: $Y = \beta_0+\beta_1X+\varepsilon$
+2. Quadratic: $Y = \beta_0+\beta_1X+\beta_2X^2+\varepsilon$
+3. Exponential: $\log Y = \log\beta_0 + \beta_1X + \varepsilon$
+4. Log-log: $\log Y = \beta_0 + \beta_1\log X + \varepsilon$
+
+```{r}
+#| fig-asp: 0.33
+iron <- as.data.frame(matrix(scan("data/iron.dat", quiet = TRUE), ncol = 2, byrow = TRUE))
+names(iron) <- c("chemical", "magnetic")
+chemical <- iron$chemical; magnetic <- iron$magnetic
+a <- seq(10, 40, .1)
+par(mfrow = c(1, 4), mar = c(4, 4, 2, 1))
+L1 <- lm(magnetic ~ chemical); plot(chemical, magnetic, main = "Linear", pch = 16); lines(a, L1$coef[1] + L1$coef[2] * a, lwd = 2)
+L2 <- lm(magnetic ~ chemical + I(chemical^2)); plot(chemical, magnetic, main = "Quadratic", pch = 16)
+lines(a, L2$coef[1] + L2$coef[2] * a + L2$coef[3] * a^2, lwd = 2)
+L3 <- lm(log(magnetic) ~ chemical); plot(chemical, magnetic, main = "Exponential", pch = 16)
+lines(a, exp(L3$coef[1] + L3$coef[2] * a), lwd = 2)
+L4 <- lm(log(magnetic) ~ log(chemical)); plot(log(chemical), log(magnetic), main = "Log-Log", pch = 16)
+lines(log(a), L4$coef[1] + L4$coef[2] * log(a), lwd = 2)
+```
+
+## Example 8.17: Leave-One-Out Cross-Validation
+
+```{r}
+n <- length(magnetic); e1 <- e2 <- e3 <- e4 <- numeric(n)
+for (k in 1:n) {                             # fit models on leave-one-out samples
+  y <- magnetic[-k]; x <- chemical[-k]
+  J1 <- lm(y ~ x);                   yhat1 <- J1$coef[1] + J1$coef[2] * chemical[k]
+  e1[k] <- magnetic[k] - yhat1
+  J2 <- lm(y ~ x + I(x^2));          yhat2 <- J2$coef[1] + J2$coef[2] * chemical[k] + J2$coef[3] * chemical[k]^2
+  e2[k] <- magnetic[k] - yhat2
+  J3 <- lm(log(y) ~ x);              yhat3 <- exp(J3$coef[1] + J3$coef[2] * chemical[k])
+  e3[k] <- magnetic[k] - yhat3
+  J4 <- lm(log(y) ~ log(x));         yhat4 <- exp(J4$coef[1] + J4$coef[2] * log(chemical[k]))
+  e4[k] <- magnetic[k] - yhat4
+}
+c(linear = mean(e1^2), quadratic = mean(e2^2), exponential = mean(e3^2), loglog = mean(e4^2))
+```
+
+::: tip
+The quadratic model has the smallest estimated prediction error. For linear smoothers, LOOCV has a shortcut: $\frac1n\sum\big(e_i/(1-h_{ii})\big)^2$ with leverages $h_{ii}$ (try `mean((resid(L2) / (1 - hatvalues(L2)))^2)`).
+:::
+
+## When Does the Bootstrap Fail?
+
+```{r}
+#| fig-asp: 0.33
+set.seed(4750); x <- runif(50, 0, 1)                    # theta = 1, theta.hat = max(x)
+bmax <- replicate(2000, max(sample(x, replace = TRUE)))
+c(P_star_equals_max = mean(bmax == max(x)), theory = 1 - (1 - 1 / 50)^50)
+hist(bmax, breaks = 40, col = "#FFCC00", main = "Bootstrap of the sample maximum: a spike at max(x)")
+```
+
+- The bootstrap needs $\hat\theta$ to be a **smooth** functional of $F_n$; extremes, boundary parameters, and heavy tails break it.
+
+## Summary
+
+::: instructions
+- Bootstrap = plug in $F_n$ for $F$, resample with replacement, recompute.
+- SE: $B\approx 200$; bias: $\bar{\hat\theta}^* - \hat\theta$; intervals: $B\ge 1000$-$2000$.
+- Normal, basic, percentile, bootstrap $t$, BCa: prefer **BCa** (or bootstrap $t$) for skewed statistics.
+- `boot()` + `boot.ci()` do it all; write the statistic as `function(data, i)`.
+- Cross-validation estimates prediction error for model selection.
+:::

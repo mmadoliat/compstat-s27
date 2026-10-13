@@ -1,0 +1,622 @@
+---
+title: "K-Means and Hierarchical Clustering 🧩"
+subtitle: "MATH 4750 / MSSC 5750 Computational Statistics"
+format: 
+  revealjs:
+    code-line-numbers: false
+    html-math-method:
+      method: mathjax
+      url: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    highlight-style: arrow
+    code-block-bg: true
+    self-contained: false
+    slide-number: c/t    
+    incremental: false
+    width: 1800
+    height: 1000
+    margin: 0.05
+    logo: "logo.png"
+    footer: "[mmadoliat.github.io/compstat-s27](https://mmadoliat.github.io/compstat-s27/)"
+    theme: ["simple", "slides.scss"]
+    multiplex: false
+    code-link: true
+    fig-cap-location: bottom
+    fig-align: center
+    transition: none ## fade slide convex concave zoom
+    title-slide-attributes:
+      data-background-image: mu-bg.png
+      data-background-size: stretch
+      data-slide-number: none
+editor: source
+execute:
+  freeze: auto
+  echo: true
+  purl: true
+---
+
+#  {visibility="hidden"}
+
+\def\bx{\mathbf{x}}
+\def\by{\mathbf{y}}
+\def\bz{\mathbf{z}}
+\def\bu{\mathbf{u}}
+\def\bv{\mathbf{v}}
+\def\bw{\mathbf{w}}
+\def\bX{\mathbf{X}}
+\def\bY{\mathbf{Y}}
+\def\bZ{\mathbf{Z}}
+\def\bU{\mathbf{U}}
+\def\bV{\mathbf{V}}
+\def\bW{\mathbf{W}}
+\def\bI{\mathbf{I}}
+\def\bH{\mathbf{H}}
+\def\bS{\mathbf{S}}
+\def\bD{\mathbf{D}}
+\def\bbeta{\boldsymbol \beta}
+\def\btheta{\boldsymbol \theta}
+\def\bmu{\boldsymbol \mu}
+\def\bSigma{\boldsymbol \Sigma}
+\def\bLambda{\boldsymbol \Lambda}
+\def\beps{\boldsymbol \epsilon}
+\def\T{\text{T}}
+\def\E{\mathrm{E}}
+\def\var{\mathrm{Var}}
+\def\cov{\mathrm{Cov}}
+\def\cor{\mathrm{Corr}}
+\def\se{\mathrm{se}}
+\def\bias{\mathrm{bias}}
+\def\mse{\mathrm{MSE}}
+\def\R{\mathbb{R}}
+\def\P{\mathrm{P}}
+\def\iid{\stackrel{\text{iid}}{\sim}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+```{r}
+#| label: setup
+#| include: false
+#| eval: true
+library(knitr)
+library(ggplot2)
+knitr::opts_chunk$set(
+    fig.asp = 0.618,
+    fig.align = "center",
+    out.width = "100%",
+    fig.retina = 3,
+    fig.path = "./images/07-clustering/",
+    message = FALSE,
+    warning = FALSE,
+    global.par = TRUE
+)
+options(
+  htmltools.dir.version = FALSE,
+  dplyr.print_min = 6, 
+  dplyr.print_max = 6,
+  tibble.width = 80,
+  width = 80,
+  digits = 4
+  )
+hook_output <- knitr::knit_hooks$get("output")
+knitr::knit_hooks$set(output = function(x, options) {
+  lines <- options$output.lines
+  if (is.null(lines)) {
+    return(hook_output(x, options))  # pass to default hook
+  }
+  x <- unlist(strsplit(x, "\n"))
+  more <- "..."
+  if (length(lines)==1) {        # first n lines
+    if (length(x) > lines) {
+      # truncate the output, but add ....
+      x <- c(head(x, lines), more)
+    }
+  } else {
+    x <- c(more, x[lines], more)
+  }
+  # paste these lines together
+  x <- paste(c(x, ""), collapse = "\n")
+  hook_output(x, options)
+})
+ggplot2::theme_set(ggplot2::theme_bw(base_size = 16))
+```
+
+# Clustering
+
+<h2> Lecture A: K-means clustering (dissimilarity, within-cluster variation, algorithm) </h2>
+<h2> Lecture B: Hierarchical clustering (linkages, dendrograms) and choosing the number of clusters </h2>
+
+::: notes
+- Slides adapted from Ryan Tibshirani's Data Mining class notes. All figures are regenerated with simulated data so they are reproducible.
+- R scripts: kmeans-exmp.R, hclust-exmp.R, more-on-linkage.R, kclust.R in the course code repository.
+:::
+
+```{r}
+#| include: false
+set.seed(4750)
+# a running example: n = 250 points in R^2 from 4 groups that are not well separated
+make_blobs <- function(n, centers, sd) {
+  k <- sample(seq_len(nrow(centers)), n, replace = TRUE)
+  centers[k, ] + matrix(rnorm(2 * n, sd = sd), n)
+}
+X250 <- make_blobs(250, rbind(c(0.2, 0), c(1, 0), c(0.2, 0.6), c(1, 1)), sd = 0.18)
+```
+
+# Lecture A: K-Means Clustering {#part-a}
+
+## Don't Confuse Clustering and Classification!
+
+:::: {.columns}
+::: {.column width="50%"}
+**Classification (supervised)**
+
+- Data whose groups are **known**
+- Learn what differentiates the groups (a classification function) to classify future data
+- e.g. handwritten digits 0-9 with labels
+:::
+::: {.column width="50%"}
+**Clustering (unsupervised)**
+
+- Groups are **unknown and undefined**
+- Learn the groups themselves, as well as what differentiates them
+:::
+::::
+
+```{r}
+#| fig-asp: 0.3
+#| echo: false
+set.seed(2)
+blobs <- make_blobs(60, rbind(c(0, 0), c(3, 1), c(1.5, 3)), 0.5)
+par(mfrow = c(1, 2), mar = c(1, 1, 2, 1))
+plot(blobs, pch = 15, col = "gray40", axes = FALSE, main = "What we observe", xlab = "", ylab = "")
+plot(blobs, pch = 15, col = c("#FFCC00", "#C0392B", "#2E5BBA")[kmeans(blobs, 3, nstart = 10)$cluster],
+     axes = FALSE, main = "What clustering finds", xlab = "", ylab = "")
+```
+
+## Dissimilarity and Within-Cluster Scatter
+
+- Observations $X_1,\dots,X_n$ and **dissimilarities** $d(X_i,X_j)$, e.g. $X_i\in\R^p$ and $d(X_i,X_j) = \|X_i - X_j\|_2^2$.
+- A **clustering** $C$ assigns each $X_i$ to a group $C(i) = k\in\{1,\dots,K\}$; $n_k$ points in group $k$; $d_{ij} = d(X_i,X_j)$.
+
+The **within-cluster scatter** is
+
+$$
+W = \frac12\sum_{k=1}^K\frac1{n_k}\sum_{C(i)=k,\,C(j)=k} d_{ij}.
+$$
+
+Smaller $W$ is better.
+
+## Simple Example: $n = 5$, $K = 2$
+
+```{r}
+#| fig-asp: 0.4
+P <- rbind(c(0.70, 0.02), c(0.95, 0.40), c(0.02, 0.70), c(0.38, 0.55), c(0.43, 0.97))
+D <- as.matrix(dist(P))^2
+round(D, 2)
+W <- function(cl, D) sum(sapply(unique(cl), function(k) sum(D[cl == k, cl == k]) / sum(cl == k))) / 2
+c(red = W(c(1, 1, 2, 1, 2), D), blue = W(c(1, 1, 2, 2, 2), D))
+```
+
+::: tip
+The `dist()` function computes all pairwise distances (Euclidean by default; see `method =`).
+:::
+
+## Finding the Best Group Assignments
+
+Why not search over all clusterings $C$? The number of possible assignments of $n$ points into $K$ nonempty groups is
+
+$$
+A(n,K) = \frac1{K!}\sum_{k=1}^K(-1)^{K-k}\binom Kk k^n .
+$$
+
+```{r}
+A <- function(n, K) sum((-1)^(K - (1:K)) * choose(K, 1:K) * (1:K)^n) / factorial(K)
+c(A(10, 4), A(25, 4))
+```
+
+- $A(10,4) = 34{,}105$ and $A(25,4)\approx 5\times10^{13}$: hopeless for realistic $n$. We settle for an **approximation**.
+
+## Rewriting the Within-Cluster Scatter
+
+For Euclidean data and $d_{ij} = \|X_i - X_j\|_2^2$:
+
+$$
+\frac12\sum_{k=1}^K\frac1{n_k}\sum_{C(i)=k}\sum_{C(j)=k}\|X_i-X_j\|_2^2 = \sum_{k=1}^K\sum_{C(i)=k}\|X_i-\bar X_k\|_2^2,
+$$
+
+where $\bar X_k = \frac1{n_k}\sum_{C(i)=k}X_i$. The right-hand side is the **within-cluster variation**.
+
+```{r}
+cl <- c(1, 1, 2, 2, 2)
+c(scatter = W(cl, D),
+  wcv = sum(sapply(1:2, function(k) sum(sweep(P[cl == k, , drop = FALSE], 2, colMeans(P[cl == k, , drop = FALSE]))^2))))
+```
+
+## Rewriting the Minimization
+
+- For any $Z_1,\dots,Z_m$, $\sum_i\|Z_i - c\|_2^2$ is minimized by $c = \bar Z$.
+- So minimizing the within-cluster variation is the same as minimizing the **enlarged criterion**
+
+$$
+\sum_{k=1}^K\sum_{C(i)=k}\|X_i - c_k\|_2^2 \quad\text{over both } C \text{ and } c_1,\dots,c_K\in\R^p.
+$$
+
+## The K-Means Algorithm
+
+::: algo
+Start with an initial guess for $c_1,\dots,c_K$ (e.g. $K$ random points). Repeat:
+
+1. **Minimize over $C$:** for each $i$, find the closest center $c_k$ to $X_i$ and let $C(i) = k$.
+2. **Minimize over $c_1,\dots,c_K$:** for each $k$, let $c_k = \bar X_k$, the average of points in group $k$.
+
+Stop when the within-cluster variation does not change.
+:::
+
+In words: (1) label each point by its closest center; (2) replace each center by the average of its points.
+
+## K-Means from Scratch
+
+```{r}
+my_kmeans <- function(X, K, centers = X[sample(nrow(X), K), , drop = FALSE], maxit = 50) {
+  history <- list(centers)
+  for (it in 1:maxit) {
+    d <- sapply(1:K, function(k) colSums((t(X) - centers[k, ])^2))   # n x K squared distances
+    cl <- max.col(-d)                                                  # step 1: closest center
+    new <- t(sapply(1:K, function(k) colMeans(X[cl == k, , drop = FALSE])))   # step 2: averages
+    history[[it + 1]] <- new
+    if (all(abs(new - centers) < 1e-10)) break
+    centers <- new
+  }
+  wcv <- sum(sapply(1:K, function(k) sum(sweep(X[cl == k, , drop = FALSE], 2, centers[k, ])^2)))
+  list(cluster = cl, centers = centers, wcv = wcv, iter = it, history = history)
+}
+```
+
+## K-Means Example: $n = 300$, $K = 3$
+
+```{r}
+#| fig-asp: 0.38
+set.seed(1)
+X300 <- make_blobs(300, rbind(c(0, 0), c(0.5, 1.4), c(1.2, 0.6)), sd = 0.22)
+init <- rbind(c(1.2, 1.3), c(0.2, -0.3), c(0.3, 0.2))
+fit <- my_kmeans(X300, 3, centers = init)
+par(mfrow = c(1, 4), mar = c(2, 2, 2, 1))
+cols <- c("#C0392B", "#2E5BBA", "#27AE60")
+for (it in c(1, 2, 3, length(fit$history))) {
+  cen <- fit$history[[it]]
+  cl <- max.col(-sapply(1:3, function(k) colSums((t(X300) - cen[k, ])^2)))
+  plot(X300, col = if (it == 1) "gray60" else adjustcolor(cols[cl], .4), pch = 20,
+       main = if (it == 1) "Initial centers" else paste("Iteration", it - 1))
+  points(cen, pch = 19, cex = 2.5, col = cols)
+}
+```
+
+## Properties of K-Means
+
+- Within-cluster variation **decreases** with each iteration: if $W_t$ is the value at iteration $t$, then $W_{t+1}\le W_t$.
+- The algorithm **always converges**, no matter the initial centers. (In at most $K^n$ iterations. Why?)
+- The final clustering **depends on the initial centers**. Run K-means multiple times (e.g. 10 random starts) and keep the solution with the smallest within-cluster variation.
+- K-means is **not guaranteed** to find the global minimizer (that would require all $A(n,K)$ assignments!).
+
+## Multiple Runs: $n = 250$, $K = 4$
+
+```{r}
+#| fig-asp: 0.36
+set.seed(11)
+par(mfrow = c(1, 3), mar = c(2, 2, 3, 1))
+cols4 <- c("#C0392B", "#2E5BBA", "#27AE60", "#C2185B")
+for (r in 1:3) {
+  f <- my_kmeans(X250, 4)
+  plot(X250, col = adjustcolor(cols4[f$cluster], .5), pch = 20, main = sprintf("WCV = %.1f", f$wcv))
+  points(f$centers, pch = 19, cex = 2.5, col = cols4)
+}
+```
+
+- In R, `kmeans(X, centers = K, nstart = 20)` does this automatically (Hartigan-Wong algorithm by default).
+
+## `kmeans()` in R and Standardization
+
+```{r}
+km <- kmeans(X250, centers = 4, nstart = 20)
+km$tot.withinss; km$size
+```
+
+::: alert
+K-means uses Euclidean distance: variables on larger scales dominate. Usually `scale()` the variables first.
+:::
+
+```{r}
+set.seed(4750)
+table(kmeans(scale(iris[, 1:4]), 3, nstart = 20)$cluster, iris$Species)
+```
+
+## K-Medoids (PAM)
+
+- K-means centers are averages (not data points) and are sensitive to outliers.
+- **K-medoids** restricts the centers to be data points (medoids) and works with **any** dissimilarity.
+
+```{r}
+#| fig-asp: 0.36
+library(cluster)
+pm <- pam(X250, k = 4)
+par(mfrow = c(1, 2), mar = c(2, 2, 3, 1))
+plot(X250, col = adjustcolor(cols4[pm$clustering], .5), pch = 20, main = "PAM (K-medoids)")
+points(pm$medoids, pch = 4, cex = 3, lwd = 4)
+plot(X250, col = adjustcolor(cols4[km$cluster], .5), pch = 20, main = "K-means")
+points(km$centers, pch = 4, cex = 3, lwd = 4)
+```
+
+# Lecture B: Hierarchical Clustering {#part-b}
+
+## From K-Means to Hierarchical Clustering
+
+Recall two properties of K-means (K-medoids):
+
+1. It fits exactly $K$ clusters (as specified).
+2. The final assignment depends on the chosen initial centers.
+
+Given pairwise dissimilarities $d_{ij}$, **hierarchical clustering** produces a consistent result without choosing initial positions or the number of clusters.
+
+- The catch: we must choose a way to measure dissimilarity between **groups**, called the **linkage**.
+- The result is a sequence of clusterings: at one end all points are in their own cluster, at the other end all points are in one cluster.
+
+## Agglomerative vs. Divisive
+
+:::: {.columns}
+::: {.column width="50%"}
+**Agglomerative** (bottom-up)
+
+- Start with all points in their own group
+- Until there is only one cluster, repeatedly merge the two groups with the smallest dissimilarity
+:::
+::: {.column width="50%"}
+**Divisive** (top-down)
+
+- Start with all points in one cluster
+- Until all points are in their own cluster, repeatedly split the group into two, resulting in the biggest dissimilarity
+:::
+::::
+
+Agglomerative strategies are simpler; we focus on them (`hclust()`). Divisive: `cluster::diana()`.
+
+## Simple Example and the Dendrogram
+
+```{r}
+#| fig-asp: 0.38
+P7 <- rbind(c(.88, .92), c(.27, .66), c(.38, .63), c(.57, .1), c(.89, .3), c(.2, .2), c(.88, .7))
+hc7 <- hclust(dist(P7), method = "complete")
+hc7$merge                              # the merge sequence (negative = singletons)
+par(mfrow = c(1, 2))
+plot(P7, pch = 1, cex = 2, xlab = "Dimension 1", ylab = "Dimension 2", xlim = c(.1, 1)); text(P7, labels = 1:7, pos = 2)
+plot(hc7, main = "Dendrogram", xlab = "", sub = "")
+```
+
+## What's a Dendrogram?
+
+A tree that displays the hierarchical sequence of clusterings:
+
+- Each node represents a group; each leaf is a singleton; the root contains the whole data set.
+- Each internal node has two daughters: the groups that were merged to form it.
+- With leaves at height zero, each internal node is drawn at a height **proportional to the dissimilarity** between its two daughters.
+- **Cutting** the dendrogram horizontally partitions the data into clusters: `cutree(hc, h = )` or `cutree(hc, k = )`.
+
+## Linkages
+
+- Points $X_1,\dots,X_n$, dissimilarities $d_{ij}$ (here $d_{ij} = \|X_i - X_j\|_2$, distance not squared).
+- Groups $G, H\subseteq\{1,\dots,n\}$. A **linkage** is a function $d(G,H)$ returning a dissimilarity score between groups.
+
+::: algo
+Agglomerative clustering: start with all points in their own group; until there is only one cluster, merge the two groups $G, H$ with the smallest $d(G,H)$.
+:::
+
+```{r}
+#| include: false
+set.seed(60)
+X60 <- rbind(matrix(rnorm(60, mean = c(-1.2, -1.2), sd = .7), ncol = 2, byrow = TRUE),
+             matrix(rnorm(60, mean = c(1, 1), sd = .7), ncol = 2, byrow = TRUE))
+X60 <- X60 + 0
+X60[c(3, 7), ] <- rbind(c(-1.5, 3.1), c(-1.2, 3.2))     # two far points
+d60 <- dist(X60)
+plot_cut <- function(method, h, main) {
+  hc <- hclust(d60, method = method)
+  cl <- cutree(hc, h = h)
+  par(mfrow = c(1, 2), mar = c(3, 4, 2, 1))
+  plot(X60, col = c("#C0392B", "#2E5BBA", "#27AE60", "#C2185B", "orange")[cl], pch = 1, lwd = 2, xlab = "", ylab = "", main = main)
+  plot(hc, labels = FALSE, main = "", xlab = "", sub = ""); abline(h = h, lty = 2)
+}
+```
+
+## Single Linkage
+
+Nearest-neighbor linkage: the smallest dissimilarity between two points in opposite groups,
+$$
+d_{\text{single}}(G,H) = \min_{i\in G,\,j\in H}d_{ij}.
+$$
+
+```{r}
+#| fig-asp: 0.36
+#| echo: false
+plot_cut("single", 0.9, "single linkage, cut at h = 0.9")
+```
+
+**Cut interpretation:** for each point $X_i$, there is another point $X_j$ in its cluster with $d_{ij}\le 0.9$.
+
+## Complete Linkage
+
+Furthest-neighbor linkage: the largest dissimilarity between two points in opposite groups,
+$$
+d_{\text{complete}}(G,H) = \max_{i\in G,\,j\in H}d_{ij}.
+$$
+
+```{r}
+#| fig-asp: 0.36
+#| echo: false
+plot_cut("complete", 5, "complete linkage, cut at h = 5")
+```
+
+**Cut interpretation:** for each point $X_i$, every other point $X_j$ in its cluster satisfies $d_{ij}\le 5$.
+
+## Average Linkage
+
+The average dissimilarity over all pairs in opposite groups,
+$$
+d_{\text{average}}(G,H) = \frac1{n_G\cdot n_H}\sum_{i\in G,\,j\in H}d_{ij}.
+$$
+
+```{r}
+#| fig-asp: 0.36
+#| echo: false
+plot_cut("average", 2.5, "average linkage, cut at h = 2.5")
+```
+
+**Cut interpretation:** there really isn't a good one!
+
+## Shortcomings of Single, Complete, and Average Linkage
+
+- **Single** linkage suffers from **chaining**: to merge two groups, only one pair of points needs to be close. Clusters can be too spread out, not compact enough.
+- **Complete** linkage avoids chaining but suffers from **crowding**: a point can be closer to points in other clusters than to points in its own cluster.
+- **Average** linkage strikes a balance (relatively compact and relatively far apart), **but**
+  + it is not clear what properties the clusters have when we cut the tree, and
+  + results can change with a **monotone increasing transformation** of the $d_{ij}$ (single and complete are unchanged).
+
+```{r}
+#| fig-asp: 0.3
+par(mfrow = c(1, 2), mar = c(2, 2, 2, 1))
+for (pw in 1:2) plot(X60, col = c("#C0392B", "#2E5BBA", "#27AE60")[cutree(hclust(d60^pw, "average"), k = 3)],
+                     pch = 1, lwd = 2, main = c("Avg linkage: distance", "Avg linkage: distance^2")[pw])
+```
+
+## Centroid Linkage
+
+Commonly used in biology (Eisen et al., 1998). With group averages $\bar X_G$, $\bar X_H$:
+$$
+d_{\text{centroid}}(G,H) = \|\bar X_G - \bar X_H\|_2.
+$$
+
+```{r}
+#| fig-asp: 0.34
+hc_c <- hclust(d60^2, method = "centroid")      # R's centroid method expects squared distances
+sum(diff(hc_c$height) < 0)                      # number of inversions in the merge heights
+par(mar = c(1, 4, 1, 1)); plot(hc_c, labels = FALSE, main = "", xlab = "", sub = "")
+```
+
+- Simple, **but** can produce dendrograms with **inversions** (a merge lower than the previous one), there is no cut interpretation, and answers change under monotone transformations.
+
+## Minimax Linkage
+
+Define the radius of a group around $X_i$ as $r(X_i, G) = \max_{j\in G}d_{ij}$. Then
+$$
+d_{\text{minimax}}(G,H) = \min_{i\in G\cup H}r(X_i, G\cup H),
+$$
+the smallest radius encompassing all points in $G$ and $H$; the minimizer $X_c$ is the **prototype** (Bien and Tibshirani, 2011).
+
+- **Cut interpretation:** each point is within $h$ of the center (a data point!) of its cluster.
+- No inversions; unchanged by monotone transformations; the hierarchical analogue of K-medoids.
+
+```{r}
+#| eval: !expr requireNamespace("protoclust", quietly = TRUE)
+#| fig-asp: 0.3
+hc_mm <- protoclust::protoclust(d60)
+plot(hc_mm, labels = FALSE, main = "Minimax linkage (protoclust)", xlab = "", sub = "")
+```
+
+## Linkage Summary
+
+```{r}
+#| echo: false
+ls <- data.frame(Linkage = c("Single", "Complete", "Average", "Centroid", "Minimax"),
+  `No inversions?` = c("✓", "✓", "✓", "✗", "✓"),
+  `Unchanged under monotone transf.?` = c("✓", "✓", "✗", "✗", "✓"),
+  `Cut interpretation?` = c("✓", "✓", "✗", "✗", "✓"),
+  Notes = c("chaining", "crowding", "", "simple", "centers are data points"), check.names = FALSE)
+knitr::kable(ls)
+```
+
+- This doesn't tell us the "best" linkage; that is very **situation dependent**. Also: Ward's method (`method = "ward.D2"`) merges the pair that least increases the within-cluster variation.
+
+# How Many Clusters?
+
+## This Is a Hard Problem
+
+- Sometimes $K$ is known ahead of time (segment customers for $K$ salespeople; vector quantization with $K$ codewords).
+- Other times $K$ is implicitly defined by cutting a tree at a given height.
+- In most exploratory applications $K$ is **unknown**. What is the "right" value of $K$?
+
+Why is it hard? It is hard for humans to *perform* (unless the data are low-dimensional) and just as hard to *explain* what we are looking for. Why is it important? E.g., $K=2$ vs. $K=3$ subtypes of breast cancer is a big scientific difference.
+
+## Within-Cluster Variation Just Keeps Decreasing
+
+$$
+W(K) = \sum_{k=1}^K\sum_{C(i)=k}\|X_i - \bar X_k\|_2^2
+$$
+
+```{r}
+#| fig-asp: 0.36
+set.seed(4750)
+fits <- lapply(1:10, function(k) kmeans(X250, k, nstart = 20))
+Wk <- sapply(fits, `[[`, "tot.withinss"); Bk <- sapply(fits, `[[`, "betweenss")
+par(mfrow = c(1, 2))
+plot(X250, pch = 20, col = "gray50"); points(fits[[4]]$centers, pch = 19, cex = 2.5, col = cols4)
+plot(1:10, Wk, type = "b", pch = 19, xlab = "K", ylab = "Within-cluster variation")
+```
+
+## Between-Cluster Variation
+
+$$
+B(K) = \sum_{k=1}^K n_k\|\bar X_k - \bar X\|_2^2,\qquad \bar X = \frac1n\sum_{i=1}^nX_i
+$$
+
+- Bigger $B$ is better, but $B(K)$ just keeps **increasing** with $K$.
+- Note $W(K) + B(K) = \text{TSS}$, constant!
+
+```{r}
+#| fig-asp: 0.3
+plot(1:10, Bk, type = "b", pch = 19, xlab = "K", ylab = "Between-cluster variation")
+```
+
+## The CH Index (Calinski and Harabasz, 1974)
+
+We want **simultaneously** a small $W$ and a large $B$:
+
+$$
+\text{CH}(K) = \frac{B(K)/(K-1)}{W(K)/(n-K)},\qquad \hat K = \argmax_{K\in\{2,\dots,K_{\max}\}}\text{CH}(K).
+$$
+
+```{r}
+#| fig-asp: 0.34
+n <- nrow(X250); K <- 2:10
+CH <- (Bk[K] / (K - 1)) / (Wk[K] / (n - K))
+par(mfrow = c(1, 2))
+plot(X250, pch = 20, col = adjustcolor(cols4[fits[[4]]$cluster], .5))
+plot(K, CH, type = "b", pch = 19, xlab = "K", ylab = "CH index"); abline(v = K[which.max(CH)], lty = 2, col = 2)
+```
+
+- We would choose $K = `r K[which.max(CH)]`$. **Problem:** CH is not defined for $K = 1$, so it can never choose "no clusters".
+
+## Two More Criteria: Silhouette and Gap Statistic
+
+```{r}
+#| fig-asp: 0.34
+sil <- sapply(2:10, function(k) mean(silhouette(fits[[k]]$cluster, dist(X250))[, "sil_width"]))
+set.seed(4750)
+gap <- clusGap(X250, FUNcluster = kmeans, K.max = 10, B = 50, nstart = 10)
+par(mfrow = c(1, 2))
+plot(2:10, sil, type = "b", pch = 19, xlab = "K", ylab = "average silhouette width")
+plot(gap, main = "Gap statistic")
+maxSE(gap$Tab[, "gap"], gap$Tab[, "SE.sim"], method = "firstSEmax")
+```
+
+::: notes
+- The gap statistic (Tibshirani, Walther, Hastie 2001) compares log W(K) with its expectation under a reference (uniform) distribution, and *can* choose K = 1.
+:::
+
+## Summary
+
+::: instructions
+- **K-means:** minimize within-cluster variation by alternating assignments and averages; use many random starts and standardize variables.
+- **K-medoids (PAM):** centers are data points; any dissimilarity.
+- **Hierarchical:** one tree, many clusterings; the **linkage** matters (single, complete, average, centroid, minimax, Ward).
+- **Choosing $K$:** elbow of $W(K)$, CH index, silhouette, gap statistic. No universal answer.
+:::
+
+::: your-turn
+Apply K-means and hierarchical clustering (complete and average linkage) to `scale(USArrests)`. Do the methods agree for $K = 4$?
+:::

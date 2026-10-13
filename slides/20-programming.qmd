@@ -1,0 +1,396 @@
+---
+title: "Programming Topics ⚙️"
+subtitle: "MATH 4750 / MSSC 5750 Computational Statistics"
+format: 
+  revealjs:
+    code-line-numbers: false
+    html-math-method:
+      method: mathjax
+      url: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    highlight-style: arrow
+    code-block-bg: true
+    self-contained: false
+    slide-number: c/t    
+    incremental: false
+    width: 1800
+    height: 1000
+    margin: 0.05
+    logo: "logo.png"
+    footer: "[mmadoliat.github.io/compstat-s27](https://mmadoliat.github.io/compstat-s27/)"
+    theme: ["simple", "slides.scss"]
+    multiplex: false
+    code-link: true
+    fig-cap-location: bottom
+    fig-align: center
+    transition: none ## fade slide convex concave zoom
+    title-slide-attributes:
+      data-background-image: mu-bg.png
+      data-background-size: stretch
+      data-slide-number: none
+editor: source
+execute:
+  freeze: auto
+  echo: true
+  purl: true
+---
+
+#  {visibility="hidden"}
+
+\def\bx{\mathbf{x}}
+\def\by{\mathbf{y}}
+\def\bz{\mathbf{z}}
+\def\bu{\mathbf{u}}
+\def\bv{\mathbf{v}}
+\def\bw{\mathbf{w}}
+\def\bX{\mathbf{X}}
+\def\bY{\mathbf{Y}}
+\def\bZ{\mathbf{Z}}
+\def\bU{\mathbf{U}}
+\def\bV{\mathbf{V}}
+\def\bW{\mathbf{W}}
+\def\bI{\mathbf{I}}
+\def\bH{\mathbf{H}}
+\def\bS{\mathbf{S}}
+\def\bD{\mathbf{D}}
+\def\bbeta{\boldsymbol \beta}
+\def\btheta{\boldsymbol \theta}
+\def\bmu{\boldsymbol \mu}
+\def\bSigma{\boldsymbol \Sigma}
+\def\bLambda{\boldsymbol \Lambda}
+\def\beps{\boldsymbol \epsilon}
+\def\T{\text{T}}
+\def\E{\mathrm{E}}
+\def\var{\mathrm{Var}}
+\def\cov{\mathrm{Cov}}
+\def\cor{\mathrm{Corr}}
+\def\se{\mathrm{se}}
+\def\bias{\mathrm{bias}}
+\def\mse{\mathrm{MSE}}
+\def\R{\mathbb{R}}
+\def\P{\mathrm{P}}
+\def\iid{\stackrel{\text{iid}}{\sim}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+```{r}
+#| label: setup
+#| include: false
+#| eval: true
+library(knitr)
+library(ggplot2)
+knitr::opts_chunk$set(
+    fig.asp = 0.618,
+    fig.align = "center",
+    out.width = "100%",
+    fig.retina = 3,
+    fig.path = "./images/20-programming/",
+    message = FALSE,
+    warning = FALSE,
+    global.par = TRUE
+)
+options(
+  htmltools.dir.version = FALSE,
+  dplyr.print_min = 6, 
+  dplyr.print_max = 6,
+  tibble.width = 80,
+  width = 80,
+  digits = 4
+  )
+hook_output <- knitr::knit_hooks$get("output")
+knitr::knit_hooks$set(output = function(x, options) {
+  lines <- options$output.lines
+  if (is.null(lines)) {
+    return(hook_output(x, options))  # pass to default hook
+  }
+  x <- unlist(strsplit(x, "\n"))
+  more <- "..."
+  if (length(lines)==1) {        # first n lines
+    if (length(x) > lines) {
+      # truncate the output, but add ....
+      x <- c(head(x, lines), more)
+    }
+  } else {
+    x <- c(more, x[lines], more)
+  }
+  # paste these lines together
+  x <- paste(c(x, ""), collapse = "\n")
+  hook_output(x, options)
+})
+ggplot2::theme_set(ggplot2::theme_bw(base_size = 16))
+```
+
+# Programming Topics
+
+<h2> Benchmarking: comparing the speed of code </h2>
+<h2> Profiling: finding the bottleneck </h2>
+<h2> Object size, attributes, and equality </h2>
+<h2> Finding source code: generics, primitives, compiled code </h2>
+<h2> Rcpp, vectorization, and parallel computing </h2>
+
+::: notes
+- Rizzo Chapter 15. Theme: first make it correct, then find out where it is slow, then make that part fast.
+:::
+
+## "Premature Optimization Is the Root of All Evil"
+
+::: instructions
+1. **Correct first:** write clear code; test it against known answers.
+2. **Measure:** benchmark alternatives, profile to find the bottleneck (usually one line).
+3. **Improve the bottleneck:** vectorize, preallocate, use better algorithms/data structures, call compiled code, parallelize.
+4. **Re-test** for correctness.
+:::
+
+Tools: `system.time()`, `microbenchmark`, `bench`, `Rprof()`, `profvis`, `object.size()`, `Rcpp`, `parallel`.
+
+## Example 15.1: Benchmarking Ways to Generate a Sequence
+
+```{r}
+s1 <- 1:10; s2 <- seq(1, 10, 1); s3 <- seq.int(1, 10, 1)
+str(data.frame(s1 = s1, s2 = s2, s3 = s3))            # integer vs double!
+```
+
+```{r}
+#| eval: !expr requireNamespace("microbenchmark", quietly = TRUE)
+#| fig-asp: 0.33
+library(microbenchmark)
+n <- 1000
+mb <- microbenchmark(seq(1, n, 1), seq.int(1, n, 1), 1:n, times = 500)
+print(mb, unit = "us")
+autoplot(mb)                      # violin plot of the timings
+```
+
+## Example 15.2: Benchmarking Ways to Initialize a Vector
+
+```{r}
+#| eval: !expr requireNamespace("microbenchmark", quietly = TRUE)
+n <- 100
+mb2 <- microbenchmark(
+  numeric = numeric(n) + 1,
+  rep = rep(1, n),
+  seq = seq(from = 1, to = 1, length = n),
+  ones = matrix(1, nrow = n, ncol = 1),
+  as.ones = as.matrix(rep(1, n)),
+  times = 500)
+print(mb2, unit = "us")
+```
+
+## Without Extra Packages: `system.time()` and Replication
+
+```{r}
+timeit <- function(expr, reps = 200) {
+  e <- substitute(expr); pf <- parent.frame()
+  system.time(for (i in 1:reps) eval(e, pf))[["elapsed"]] / reps * 1e6     # microseconds
+}
+x <- rnorm(1e5)
+c(sum_loop = timeit({ s <- 0; for (xi in x) s <- s + xi }, 20), sum_vectorized = timeit(sum(x)))
+```
+
+## Preallocation and Vectorization
+
+```{r}
+grow <- function(n) { v <- c(); for (i in 1:n) v <- c(v, i^2); v }        # copies every time!
+prealloc <- function(n) { v <- numeric(n); for (i in 1:n) v[i] <- i^2; v }
+vectorized <- function(n) (1:n)^2
+n <- 2e4
+rbind(grow = system.time(grow(n)), prealloc = system.time(prealloc(n)), vectorized = system.time(vectorized(n)))[, 1:3]
+identical(grow(100), vectorized(100))
+```
+
+::: tip
+Growing an object inside a loop is $O(n^2)$. Preallocate, or better, vectorize.
+:::
+
+## Example 15.3: Timing Two Multivariate Normal Generators
+
+```{r}
+n <- 100; d <- 30; N <- 1000
+set.seed(100); mu <- numeric(d); Sigma <- cov(matrix(rnorm(n * d), n, d))
+rmvn_chol <- function(n, mu, Sigma) {
+  Z <- matrix(rnorm(n * length(mu)), n); Z %*% chol(Sigma) + matrix(mu, n, length(mu), byrow = TRUE)
+}
+rbind(MASS_mvrnorm = system.time(for (i in 1:N) MASS::mvrnorm(n, mu, Sigma))[1:3],
+      choleski     = system.time(for (i in 1:N) rmvn_chol(n, mu, Sigma))[1:3])
+```
+
+- Also: `mvtnorm::rmvnorm(n, mu, Sigma, method = "chol")`, `rbenchmark::benchmark()`.
+
+## Example 15.4: Profiling with `Rprof`
+
+Where does a function spend its time?
+
+```{r}
+slow_boot <- function(x, B = 2000) {
+  out <- c()
+  for (b in 1:B) {
+    xs <- sample(x, replace = TRUE)
+    out <- c(out, median(xs))                        # grows the vector
+    tmp <- sort(xs); tmp <- rev(tmp)                 # useless work
+  }
+  sd(out)
+}
+pf <- tempfile()
+Rprof(pf, interval = 0.005)
+invisible(slow_boot(rnorm(500), B = 4000))
+Rprof(NULL)
+head(summaryRprof(pf)$by.total, 8)
+```
+
+- `profvis::profvis({ ... })` gives an interactive flame graph (Example 15.5).
+
+## Example 15.6: Object Size
+
+```{r}
+x <- 1:1e6; y <- as.numeric(x); z <- as.character(1:1e4)
+sapply(list(integer = x, double = y, chars = z, df = iris), function(o) format(object.size(o), units = "Kb"))
+format(object.size(matrix(0, 1000, 1000)), units = "Mb")      # 8 bytes per double
+```
+
+::: question
+Why is `1:1e6` stored with 4 bytes per element while `as.numeric(1:1e6)` needs 8? (And why might `object.size(1:1e6)` be tiny in recent R? ALTREP!)
+:::
+
+## Examples 15.7 - 15.8: Comparing Objects
+
+```{r}
+x <- c(a = 1, b = 2); y <- c(1, 2)
+x == y                         # elementwise, ignores names
+identical(x, y)                # attributes differ
+all.equal(x, y)                # describes the difference
+isTRUE(all.equal(unname(x), y))
+attributes(x)
+```
+
+# Finding Source Code
+
+## Example 15.9: Display the Code of an R Function
+
+```{r}
+sd
+body(var)[[3]]                 # pieces of a function
+formals(stats:::quantile.default)$type
+```
+
+- `RSiteSearch("bootstrap BCa")` (Example 15.10) searches help pages and mailing lists online.
+
+## Examples 15.11 - 15.14: Generics and Methods
+
+```{r}
+print                           # a generic: UseMethod("print")
+head(methods(print), 8)
+methods(class = "boot")
+getS3method("print", "density")
+```
+
+- Unexported functions: `stats:::print.density` or `getAnywhere("print.density")` (Example 15.13).
+
+## Examples 15.15 - 15.16: `.Primitive`, `.Internal`, `.Call`
+
+```{r}
+sum                             # .Primitive: implemented in C, dispatched by the interpreter
+exp
+body(mean.default)[[length(body(mean.default))]]     # .Internal(mean(x))
+body(stats:::fft)
+```
+
+- The C/Fortran source is in the R sources (e.g. `src/main/summary.c`); browse it on GitHub (`wch/r-source`).
+
+# Rcpp
+
+## Example 15.17: A First Rcpp Experiment
+
+```{r}
+library(Rcpp)
+cppFunction("
+double sumC(NumericVector x) {
+  int n = x.size();
+  double total = 0;
+  for (int i = 0; i < n; ++i) total += x[i];
+  return total;
+}")
+x <- runif(1e6)
+c(sumC = sumC(x), sum = sum(x))
+```
+
+- `cppFunction()` compiles, links, and loads the C++ function (Example 15.18). For larger code use a `.cpp` file and `sourceCpp()` (Example 15.19), or an R package with `src/` (deck 12).
+
+## Loops in C++ Are Fast
+
+A loop-heavy statistic: the **random walk Metropolis** sampler for a $N(0,1)$ target.
+
+```{r}
+cppFunction("
+NumericVector rwMetropolisC(double sigma, double x0, int N) {
+  NumericVector x(N); x[0] = x0;
+  NumericVector u = runif(N);
+  for (int i = 1; i < N; i++) {
+    double y = R::rnorm(x[i - 1], sigma);
+    if (u[i] <= exp(-0.5 * (y * y - x[i - 1] * x[i - 1]))) x[i] = y; else x[i] = x[i - 1];
+  }
+  return x;
+}")
+rwMetropolisR <- function(sigma, x0, N) {
+  x <- numeric(N); x[1] <- x0; u <- runif(N)
+  for (i in 2:N) { y <- rnorm(1, x[i - 1], sigma)
+    x[i] <- if (u[i] <= exp(-0.5 * (y^2 - x[i - 1]^2))) y else x[i - 1] }
+  x
+}
+set.seed(4750); N <- 2e5
+rbind(R = system.time(xR <- rwMetropolisR(2, 0, N))[1:3], Cpp = system.time(xC <- rwMetropolisC(2, 0, N))[1:3])
+c(mean(xC), var(xC))
+```
+
+## Example 15.20 - 15.21: A Data Example
+
+```{r}
+#| eval: !expr requireNamespace("Lahman", quietly = TRUE) && requireNamespace("microbenchmark", quietly = TRUE)
+library(Lahman)
+bat <- Batting[Batting$AB >= 300, c("H", "AB")]
+cppFunction("NumericVector ratioC(NumericVector h, NumericVector ab) { return h / ab; }")
+microbenchmark::microbenchmark(R = bat$H / bat$AB, Cpp = ratioC(bat$H, bat$AB), times = 200)
+```
+
+::: notes
+- Vectorized R arithmetic is already C code underneath: Rcpp does not help here. Rcpp helps when the R version needs an explicit loop with dependence between iterations (like the Metropolis sampler).
+:::
+
+# Parallel Computing
+
+## Embarrassingly Parallel Simulations
+
+Monte Carlo and bootstrap replicates are independent: split them across cores.
+
+```{r}
+library(parallel)
+ncores <- min(2, detectCores())
+boot_med <- function(b, dat) median(sample(dat, replace = TRUE))
+set.seed(4750); x <- rexp(200)
+cl <- makeCluster(ncores)                       # works on Windows too (PSOCK)
+clusterSetRNGStream(cl, iseed = 4750)           # reproducible parallel RNG streams
+t_par <- system.time(r_par <- parSapply(cl, 1:20000, boot_med, dat = x))
+stopCluster(cl)
+t_ser <- system.time(r_ser <- sapply(1:20000, boot_med, dat = x))
+rbind(serial = t_ser[1:3], parallel = t_par[1:3]); c(sd(r_ser), sd(r_par))
+```
+
+- On macOS/Linux: `mclapply(..., mc.cores = )` (forking). For reproducibility use `RNGkind("L'Ecuyer-CMRG")` streams.
+- Overhead matters: parallelize **coarse** tasks (thousands of replicates per worker), not single cheap calls.
+
+## Python Supplement: Timing and Numba
+
+```{.python}
+import numpy as np, timeit
+x = np.random.default_rng(4750).uniform(size=1_000_000)
+print(timeit.timeit(lambda: sum(x), number=3))        # Python loop
+print(timeit.timeit(lambda: x.sum(), number=3))       # vectorized C
+# from numba import njit  -> @njit compiles loops to machine code (Python's Rcpp analogue)
+```
+
+## Summary
+
+::: instructions
+- Measure before optimizing: `system.time()`, `microbenchmark`, `Rprof`/`profvis`.
+- Preallocate, vectorize, avoid growing objects; work with integers vs doubles knowingly.
+- Compare objects with `identical()` / `all.equal()`.
+- Read source code: print the function, `methods()`, `getS3method()`, `:::`, R sources for primitives.
+- Rcpp for loops that cannot be vectorized; `parallel` for independent replicates.
+:::

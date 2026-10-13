@@ -1,0 +1,498 @@
+---
+title: "Probability Review 🎲"
+subtitle: "MATH 4750 / MSSC 5750 Computational Statistics"
+format: 
+  revealjs:
+    code-line-numbers: false
+    html-math-method:
+      method: mathjax
+      url: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    highlight-style: arrow
+    code-block-bg: true
+    self-contained: false
+    slide-number: c/t    
+    incremental: false
+    width: 1800
+    height: 1000
+    margin: 0.05
+    logo: "logo.png"
+    footer: "[mmadoliat.github.io/compstat-s27](https://mmadoliat.github.io/compstat-s27/)"
+    theme: ["simple", "slides.scss"]
+    multiplex: false
+    code-link: true
+    fig-cap-location: bottom
+    fig-align: center
+    transition: none ## fade slide convex concave zoom
+    title-slide-attributes:
+      data-background-image: mu-bg.png
+      data-background-size: stretch
+      data-slide-number: none
+editor: source
+execute:
+  freeze: auto
+  echo: true
+  purl: true
+---
+
+#  {visibility="hidden"}
+
+\def\bx{\mathbf{x}}
+\def\by{\mathbf{y}}
+\def\bz{\mathbf{z}}
+\def\bu{\mathbf{u}}
+\def\bv{\mathbf{v}}
+\def\bw{\mathbf{w}}
+\def\bX{\mathbf{X}}
+\def\bY{\mathbf{Y}}
+\def\bZ{\mathbf{Z}}
+\def\bU{\mathbf{U}}
+\def\bV{\mathbf{V}}
+\def\bW{\mathbf{W}}
+\def\bI{\mathbf{I}}
+\def\bH{\mathbf{H}}
+\def\bS{\mathbf{S}}
+\def\bD{\mathbf{D}}
+\def\bbeta{\boldsymbol \beta}
+\def\btheta{\boldsymbol \theta}
+\def\bmu{\boldsymbol \mu}
+\def\bSigma{\boldsymbol \Sigma}
+\def\bLambda{\boldsymbol \Lambda}
+\def\beps{\boldsymbol \epsilon}
+\def\T{\text{T}}
+\def\E{\mathrm{E}}
+\def\var{\mathrm{Var}}
+\def\cov{\mathrm{Cov}}
+\def\cor{\mathrm{Corr}}
+\def\se{\mathrm{se}}
+\def\bias{\mathrm{bias}}
+\def\mse{\mathrm{MSE}}
+\def\R{\mathbb{R}}
+\def\P{\mathrm{P}}
+\def\iid{\stackrel{\text{iid}}{\sim}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+```{r}
+#| label: setup
+#| include: false
+#| eval: true
+library(knitr)
+library(ggplot2)
+knitr::opts_chunk$set(
+    fig.asp = 0.618,
+    fig.align = "center",
+    out.width = "100%",
+    fig.retina = 3,
+    fig.path = "./images/00-review/",
+    message = FALSE,
+    warning = FALSE,
+    global.par = TRUE
+)
+options(
+  htmltools.dir.version = FALSE,
+  dplyr.print_min = 6, 
+  dplyr.print_max = 6,
+  tibble.width = 80,
+  width = 80,
+  digits = 4
+  )
+hook_output <- knitr::knit_hooks$get("output")
+knitr::knit_hooks$set(output = function(x, options) {
+  lines <- options$output.lines
+  if (is.null(lines)) {
+    return(hook_output(x, options))  # pass to default hook
+  }
+  x <- unlist(strsplit(x, "\n"))
+  more <- "..."
+  if (length(lines)==1) {        # first n lines
+    if (length(x) > lines) {
+      # truncate the output, but add ....
+      x <- c(head(x, lines), more)
+    }
+  } else {
+    x <- c(more, x[lines], more)
+  }
+  # paste these lines together
+  x <- paste(c(x, ""), collapse = "\n")
+  hook_output(x, options)
+})
+ggplot2::theme_set(ggplot2::theme_bw(base_size = 16))
+```
+
+# Probability Review
+
+<h2> Populations, samples, and types of variables </h2>
+<h2> Counting and probability rules </h2>
+<h2> Random variables, distributions, and expectation </h2>
+<h2> Multivariate distributions, independence, covariance </h2>
+<h2> Common distributions and functions of random variables </h2>
+
+::: notes
+- This is a self-study review deck that accompanies HW 0. Every theorem on these slides is checked by a quick simulation so you can see the theory and the computation side by side.
+:::
+
+# What is Statistics?
+
+## Two Branches of Statistics
+
+- **Descriptive statistics**: collection, presentation, and description of *sample* data (tables, graphs, summaries).
+
+- **Inferential statistics**: interpreting descriptive results to make decisions and draw conclusions about the *population*.
+
+:::: {.columns}
+::: {.column width="50%"}
+- **Population**: the entire group of interest
+- **Sample**: a part of the population selected to draw conclusions about the entire population
+:::
+::: {.column width="50%"}
+```{r}
+#| echo: false
+#| fig-asp: 0.6
+par(mar = c(0, 0, 0, 0))
+plot(NA, xlim = c(0, 10), ylim = c(0, 6), axes = FALSE, xlab = "", ylab = "")
+symbols(4, 3, circles = 2.8, inches = FALSE, add = TRUE, bg = "#88A0C8")
+symbols(8, 2, circles = 1.3, inches = FALSE, add = TRUE, bg = "#FFCC00")
+arrows(4.6, 3.3, 7.2, 2.3, lwd = 2, length = 0.15)
+arrows(4.3, 2.6, 7.1, 1.8, lwd = 2, length = 0.15)
+text(4, 3.2, "Population\nparameters\n\u03bc, \u03c3", cex = 1.6)
+text(8, 2, "Sample\nstatistics\nx\u0304, s", cex = 1.4)
+```
+:::
+::::
+
+## Parameters vs. Statistics
+
+:::: {.columns}
+::: {.column width="50%"}
+**Describing a population**
+
+- Use Greek letters
+- Mean $\mu$, standard deviation $\sigma$, variance $\sigma^2$, proportion $p$
+- For a given population there is only [**one**]{.red} true value of each
+- These fixed (unknown) values are **parameters**
+:::
+::: {.column width="50%"}
+**Describing a sample**
+
+- Sample mean $\bar{x}$, standard deviation $s$, variance $s^2$, proportion $\hat p$
+- Different samples give [**different**]{.red} values
+- These random quantities are **statistics**
+:::
+::::
+
+```{r}
+set.seed(4750)
+population <- rgamma(1e5, shape = 2, rate = 0.5)       # a "population"
+c(mu = mean(population), sigma = sd(population))
+replicate(5, mean(sample(population, 30)))           # five different sample means
+```
+
+## Types of Variables
+
+:::: {.columns}
+::: {.column width="50%"}
+- **Qualitative (categorical)**
+  + *Nominal*: no ordering (major, zip code)
+  + *Ordinal*: ordered categories (letter grade, rank)
+- **Quantitative (numerical)**
+  + *Discrete*: countable values with gaps (hours enrolled)
+  + *Continuous*: a continuum (weight)
+:::
+::: {.column width="50%"}
+```{r}
+#| echo: false
+vt <- data.frame(Variable = c("Weight", "Hours enrolled", "Major", "Zip code", "Letter grade"),
+                 Type = c("Numeric - continuous", "Numeric - discrete", "Categorical - nominal",
+                          "Categorical - nominal", "Categorical - ordinal"),
+                 R = c("`numeric`", "`integer`", "`factor`", "`character`/`factor`", "`ordered`"))
+knitr::kable(vt)
+```
+:::
+::::
+
+::: question
+Why is a zip code categorical even though it is written with digits?
+:::
+
+# Counting
+
+## Combinatorial Methods
+
+::: fact
+**Multiplication rule.** If an operation consists of $k$ steps that can be done in $n_1, n_2, \dots, n_k$ ways, the whole operation can be done in $n_1 \cdot n_2 \cdots n_k$ ways.
+:::
+
+- Permutations of $n$ distinct objects: $n!$
+- Permutations of $n$ objects taken $r$ at a time: ${}_nP_r = \dfrac{n!}{(n-r)!}$
+- Permutations with $n_1, \dots, n_k$ objects of $k$ kinds: $\dfrac{n!}{n_1!\, n_2! \cdots n_k!}$
+- Combinations: $\dbinom{n}{r} = \dfrac{n!}{r!(n-r)!}$, and the binomial theorem $(x+y)^n = \sum_{r=0}^n \binom{n}{r} x^{n-r} y^r$
+
+```{r}
+factorial(5); factorial(10) / factorial(7); choose(10, 3)
+factorial(11) / (factorial(4) * factorial(4) * factorial(2))   # MISSISSIPPI
+nrow(expand.grid(1:6, 1:6))    # two dice: 6 * 6 outcomes
+```
+
+# Probability
+
+## Sample Spaces and Events
+
+- **Sample space** $S$: set of all possible outcomes; each outcome is a *sample point*.
+- Events are subsets of $S$; use union $A\cup B$, intersection $A\cap B$, complement $A'$.
+
+```{r}
+#| fig-asp: 0.45
+S <- expand.grid(red = 1:6, green = 1:6)
+A <- with(S, red + green == 7)          # event: the sum is 7
+plot(S, pch = 19, col = ifelse(A, "red", "gray60"), cex = 2, asp = 1,
+     main = "Two dice: the event {sum = 7}")
+mean(A)                                 # P(A) = 6/36
+```
+
+## Axioms and Basic Rules
+
+::: fact
+**Postulates.** $P(A) \ge 0$; $P(S)=1$; for mutually exclusive $A_1, A_2,\dots$, $P(A_1\cup A_2\cup\cdots) = \sum_i P(A_i)$.
+:::
+
+- $P(A') = 1 - P(A)$, $\quad P(\varnothing) = 0$
+- $P(A\cup B) = P(A) + P(B) - P(A\cap B)$
+- $P(A\cup B\cup C) = P(A)+P(B)+P(C) - P(A\cap B) - P(A\cap C) - P(B\cap C) + P(A\cap B\cap C)$
+
+```{r}
+B <- with(S, red == 6)
+c(lhs = mean(A | B), rhs = mean(A) + mean(B) - mean(A & B))
+```
+
+## Conditional Probability, Independence, Bayes' Rule
+
+- $P(B\mid A) = \dfrac{P(A\cap B)}{P(A)}$, $\quad$ $A$ and $B$ independent iff $P(A\cap B) = P(A)P(B)$.
+- **Total probability:** if $B_1,\dots,B_k$ partition $S$, $P(A) = \sum_i P(B_i)P(A\mid B_i)$.
+- **Bayes' rule:** $P(B_r\mid A) = \dfrac{P(B_r)P(A\mid B_r)}{\sum_i P(B_i)P(A\mid B_i)}$.
+
+::: question
+A test is 95% sensitive and 90% specific; prevalence is 2%. What is $P(\text{disease}\mid +)$?
+:::
+
+. . .
+
+```{r}
+prior <- 0.02; sens <- 0.95; spec <- 0.90
+(prior * sens) / (prior * sens + (1 - prior) * (1 - spec))
+set.seed(1); n <- 1e6
+D <- runif(n) < prior; pos <- ifelse(D, runif(n) < sens, runif(n) > spec)
+mean(D[pos])          # simulation agrees
+```
+
+# Random Variables
+
+## Discrete Random Variables
+
+- A **random variable** $X$ is a real-valued function on $S$.
+- **pmf** $f(x) = P(X=x)$ with $f(x)\ge 0$ and $\sum_x f(x) = 1$.
+- **cdf** $F(x) = P(X\le x) = \sum_{t\le x} f(t)$, a non-decreasing step function.
+
+```{r}
+#| fig-asp: 0.35
+par(mfrow = c(1, 2))
+x <- 0:10
+plot(x, dbinom(x, 10, 0.3), type = "h", lwd = 4, col = "#003366", ylab = "f(x)", main = "pmf: Bin(10, 0.3)")
+plot(stepfun(x, c(0, pbinom(x, 10, 0.3))), verticals = FALSE, pch = 19, main = "cdf", ylab = "F(x)")
+```
+
+## Continuous Random Variables
+
+- **pdf** $f(x)\ge 0$ with $\int_{-\infty}^{\infty} f(x)\,dx = 1$ and $P(a\le X\le b) = \int_a^b f(x)\,dx$.
+- For continuous $X$: $P(a\le X\le b) = P(a< X< b)$ since $P(X=a)=0$.
+- **cdf** $F(x) = \int_{-\infty}^x f(t)\,dt$ and $f(x) = F'(x)$.
+
+```{r}
+integrate(dgamma, lower = 1, upper = 3, shape = 2, rate = 1)$value
+pgamma(3, 2, 1) - pgamma(1, 2, 1)
+```
+
+## Joint, Marginal, and Conditional Distributions
+
+- Joint pmf/pdf $f(x,y)$: $P\big((X,Y)\in A\big) = \iint_A f(x,y)\,dx\,dy$
+- Marginal: $g(x) = \sum_y f(x,y)$ or $\int f(x,y)\,dy$
+- Conditional: $f(x\mid y) = f(x,y)/h(y)$, $h(y) \neq 0$
+- $X_1, \dots, X_n$ **independent** iff $f(x_1,\dots,x_n) = f_1(x_1)\cdots f_n(x_n)$
+
+```{r}
+# joint pmf of (X, Y) = (first die, max of two dice)
+joint <- table(S$red, pmax(S$red, S$green)) / 36
+round(joint, 3)
+rowSums(joint)                      # marginal of X
+round(joint[, 6] / sum(joint[, 6]), 3)   # conditional of X given max = 6
+```
+
+# Expectation
+
+## Expected Value and Moments
+
+- $\E[X] = \sum_x x f(x)$ or $\int x f(x)\,dx$; $\quad\E[g(X)] = \sum_x g(x)f(x)$ or $\int g(x) f(x)\,dx$
+- $\E[aX+b] = a\E[X]+b$
+- $r$th moment about the origin $\mu_r' = \E[X^r]$; about the mean $\mu_r = \E[(X-\mu)^r]$
+- $\sigma^2 = \var(X) = \mu_2 = \mu_2' - \mu^2$, $\quad \var(aX+b) = a^2\sigma^2$
+
+```{r}
+x <- 0:10; f <- dbinom(x, 10, 0.3)
+EX <- sum(x * f); EX2 <- sum(x^2 * f)
+c(EX = EX, VarX = EX2 - EX^2, theory = 10 * 0.3 * 0.7)
+integrate(function(x) x^2 * dexp(x, 2), 0, Inf)$value - 0.5^2   # Var of Exp(2)
+```
+
+## Chebyshev's Theorem and the MGF
+
+::: fact
+**Chebyshev.** For any $k>0$, $P(|X-\mu| < k\sigma) \ge 1 - \dfrac{1}{k^2}$.
+:::
+
+```{r}
+set.seed(4750); x <- rexp(1e5, 1)       # mu = sigma = 1
+k <- c(1.5, 2, 3)
+rbind(observed = sapply(k, function(k) mean(abs(x - 1) < k)), bound = 1 - 1/k^2)
+```
+
+- **Moment generating function** $M_X(t) = \E[e^{tX}]$, with $\left.\dfrac{d^r M_X(t)}{dt^r}\right|_{t=0} = \mu_r'$.
+- If $X_1, \dots, X_n$ are independent and $Y = \sum X_i$, then $M_Y(t) = \prod_i M_{X_i}(t)$.
+
+## Independence, Covariance, and Linear Combinations
+
+- $\cov(X,Y) = \E[(X-\mu_X)(Y-\mu_Y)] = \E[XY] - \E[X]\E[Y]$
+- If $X$ and $Y$ are independent, $\E[XY] = \E[X]\E[Y]$ and $\sigma_{XY} = 0$ (the converse is false!)
+- $\var(aX \pm bY) = a^2\var(X) + b^2\var(Y) \pm 2ab\,\cov(X,Y)$
+- For $Y = \sum a_i X_i$: $\;\E[Y] = \sum a_i\E[X_i]$, $\;\var(Y) = \sum a_i^2\var(X_i) + 2\sum\sum_{i<j} a_ia_j\cov(X_i,X_j)$
+
+```{r}
+set.seed(2027)
+x <- rnorm(1e5); y <- x^2                 # dependent but uncorrelated
+cor(x, y)
+z <- 0.6 * x + rnorm(1e5, sd = 0.8)
+c(simulated = var(2 * x - 3 * z), theory = 4 * 1 + 9 * 1 - 12 * 0.6)
+```
+
+## Conditional Expectation
+
+- $\E[u(X)\mid y] = \sum_x u(x) f(x\mid y)$ or $\int u(x) f(x\mid y)\,dx$
+- **Iterated expectation** $\E[X] = \E\big[\E[X\mid Y]\big]$ and **conditional variance** $\var(X) = \E[\var(X\mid Y)] + \var(\E[X\mid Y])$ (Rizzo eqs. 2.1-2.2)
+
+```{r}
+# X | N ~ Bin(N, 0.3),  N ~ Poisson(10):  E[X] = 3, Var(X) = 3
+set.seed(4750)
+N <- rpois(1e5, 10); X <- rbinom(1e5, size = N, prob = 0.3)
+c(mean = mean(X), var = var(X))
+```
+
+# Common Distributions
+
+## Discrete Families
+
+```{r}
+#| echo: false
+dd <- data.frame(
+  Distribution = c("Discrete uniform", "Bernoulli(p)", "Binomial(n, p)", "Geometric(p)", "Negative binomial(r, p)",
+                   "Hypergeometric(N, M, n)", "Poisson(\u03bb)", "Multinomial(n; p\u2081,...,p\u2096)"),
+  `R name` = c("`sample()`", "`binom`, size = 1", "`binom`", "`geom` (failures)", "`nbinom`", "`hyper`", "`pois`", "`multinom`"),
+  Mean = c("(k+1)/2", "p", "np", "(1-p)/p", "r(1-p)/p", "nM/N", "\u03bb", "np\u1d62"),
+  Variance = c("(k\u00b2-1)/12", "p(1-p)", "np(1-p)", "(1-p)/p\u00b2", "r(1-p)/p\u00b2", "nM(N-M)(N-n)/(N\u00b2(N-1))", "\u03bb", "np\u1d62(1-p\u1d62)"),
+  check.names = FALSE)
+knitr::kable(dd)
+```
+
+::: alert
+R's geometric and negative binomial count **failures** before the first (or $r$th) success; some textbooks count trials.
+:::
+
+## Continuous Families
+
+```{r}
+#| echo: false
+cd <- data.frame(
+  Distribution = c("Uniform(a, b)", "Exponential(\u03bb)", "Gamma(r, \u03bb)", "Beta(\u03b1, \u03b2)", "Normal(\u03bc, \u03c3\u00b2)",
+                   "Weibull", "Cauchy", "t(\u03bd)", "Chi-square(\u03bd)", "F(\u03bd\u2081, \u03bd\u2082)", "Lognormal"),
+  `R name` = c("`unif`", "`exp`", "`gamma`", "`beta`", "`norm`", "`weibull`", "`cauchy`", "`t`", "`chisq`", "`f`", "`lnorm`"),
+  Mean = c("(a+b)/2", "1/\u03bb", "r/\u03bb", "\u03b1/(\u03b1+\u03b2)", "\u03bc", "--", "does not exist", "0 (\u03bd>1)", "\u03bd", "\u03bd\u2082/(\u03bd\u2082-2)", "--"),
+  Variance = c("(b-a)\u00b2/12", "1/\u03bb\u00b2", "r/\u03bb\u00b2", "\u03b1\u03b2/((\u03b1+\u03b2)\u00b2(\u03b1+\u03b2+1))", "\u03c3\u00b2", "--",
+               "does not exist", "\u03bd/(\u03bd-2)", "2\u03bd", "--", "--"),
+  check.names = FALSE)
+knitr::kable(cd)
+```
+
+## Seeing the Families
+
+```{r}
+#| fig-asp: 0.4
+x <- seq(-4, 4, length = 400)
+par(mfrow = c(1, 3))
+plot(x, dnorm(x), type = "l", lwd = 3, ylab = "density", main = "Normal vs t vs Cauchy")
+lines(x, dt(x, 3), lwd = 3, col = "red"); lines(x, dcauchy(x), lwd = 3, col = "blue")
+legend("topright", c("N(0,1)", "t(3)", "Cauchy"), col = c(1, 2, 4), lwd = 3, bty = "n")
+x <- seq(0, 10, length = 400)
+plot(x, dgamma(x, 1, 1), type = "l", lwd = 3, ylab = "density", main = "Gamma(r, 1)")
+for (r in 2:4) lines(x, dgamma(x, r, 1), lwd = 3, col = r)
+x <- seq(0, 1, length = 400)
+plot(x, dbeta(x, 2, 5), type = "l", lwd = 3, ylab = "density", main = "Beta(\u03b1, \u03b2)", ylim = c(0, 3))
+lines(x, dbeta(x, 5, 2), lwd = 3, col = 2); lines(x, dbeta(x, .5, .5), lwd = 3, col = 4)
+```
+
+# Functions of Random Variables
+
+## Distribution Function Technique
+
+- To find the distribution of $Y = u(X_1,\dots,X_n)$, compute $F(y) = P(Y\le y) = P[u(X_1,\dots,X_n) \le y]$ and differentiate.
+
+**Example.** $X_1,\dots,X_n \iid \text{Uniform}(0,1)$, $Y = \max X_i$: $F_Y(y) = y^n$, $f_Y(y) = n y^{n-1}$.
+
+```{r}
+#| fig-asp: 0.35
+set.seed(4750); n <- 5
+y <- replicate(1e4, max(runif(n)))
+hist(y, prob = TRUE, breaks = 40, col = "#FFCC00", main = "max of 5 uniforms")
+curve(n * x^(n - 1), add = TRUE, lwd = 3, col = "#003366")
+```
+
+## Transformation Technique
+
+::: fact
+**One variable.** If $y = u(x)$ is monotone with inverse $x = w(y)$, then $g(y) = f\big(w(y)\big)\,|w'(y)|$.
+:::
+
+::: fact
+**Several variables.** If $(y_1,y_2) = (u_1(x_1,x_2), u_2(x_1,x_2))$ is one-to-one with inverse $(w_1, w_2)$, then $g(y_1,y_2) = f\big(w_1(y_1,y_2), w_2(y_1,y_2)\big)\,|J|$, where $J = \det\begin{bmatrix}\partial x_1/\partial y_1 & \partial x_1/\partial y_2\\ \partial x_2/\partial y_1 & \partial x_2/\partial y_2\end{bmatrix}$.
+:::
+
+**Example.** $X\sim\text{Uniform}(0,1)$, $Y = -\log X$ has $g(y) = 1\cdot|{-e^{-y}}| = e^{-y}$: $Y\sim\text{Exp}(1)$. This is the **inverse transform method** we use in Chapter 3!
+
+```{r}
+set.seed(1); y <- -log(runif(1e5)); c(mean(y), var(y))
+```
+
+## Moment-Generating Function Technique
+
+- If $X_i$ are independent, $M_{\sum X_i}(t) = \prod_i M_{X_i}(t)$, and the MGF uniquely identifies the distribution.
+
+**Example.** $X_i \iid \text{Exp}(\lambda)$ with $M(t) = \lambda/(\lambda - t)$, so $\sum_{i=1}^r X_i$ has MGF $\big(\lambda/(\lambda-t)\big)^r$: **Gamma$(r,\lambda)$**.
+
+```{r}
+#| fig-asp: 0.35
+set.seed(4750); r <- 4; lambda <- 2
+s <- colSums(matrix(rexp(r * 1e4, lambda), nrow = r))
+hist(s, prob = TRUE, breaks = 50, col = "#88A0C8", main = "Sum of 4 Exp(2) = Gamma(4, 2)")
+curve(dgamma(x, shape = r, rate = lambda), add = TRUE, lwd = 3, col = "red")
+```
+
+## Summary and Next Steps
+
+::: instructions
+- Parameters describe populations; statistics describe samples and vary from sample to sample.
+- Probability rules, conditional probability and Bayes' rule.
+- pmf/pdf, cdf, expectation, variance, covariance, MGF.
+- Know the common discrete and continuous families and their R names.
+- Functions of random variables: cdf, transformation (Jacobian), and MGF techniques.
+:::
+
+::: your-turn
+- For each theorem on these slides, change the parameters in the code and confirm the simulation still matches the theory.
+- Review: [Introduction to Statistics ebook](https://chenghanyu-introstatsbook.netlify.app/)
+:::

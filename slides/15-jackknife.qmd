@@ -1,0 +1,437 @@
+---
+title: "The Jackknife and Resampling Applications 🔪"
+subtitle: "MATH 4750 / MSSC 5750 Computational Statistics"
+format: 
+  revealjs:
+    code-line-numbers: false
+    html-math-method:
+      method: mathjax
+      url: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    highlight-style: arrow
+    code-block-bg: true
+    self-contained: false
+    slide-number: c/t    
+    incremental: false
+    width: 1800
+    height: 1000
+    margin: 0.05
+    logo: "logo.png"
+    footer: "[mmadoliat.github.io/compstat-s27](https://mmadoliat.github.io/compstat-s27/)"
+    theme: ["simple", "slides.scss"]
+    multiplex: false
+    code-link: true
+    fig-cap-location: bottom
+    fig-align: center
+    transition: none ## fade slide convex concave zoom
+    title-slide-attributes:
+      data-background-image: mu-bg.png
+      data-background-size: stretch
+      data-slide-number: none
+editor: source
+execute:
+  freeze: auto
+  echo: true
+  purl: true
+---
+
+#  {visibility="hidden"}
+
+\def\bx{\mathbf{x}}
+\def\by{\mathbf{y}}
+\def\bz{\mathbf{z}}
+\def\bu{\mathbf{u}}
+\def\bv{\mathbf{v}}
+\def\bw{\mathbf{w}}
+\def\bX{\mathbf{X}}
+\def\bY{\mathbf{Y}}
+\def\bZ{\mathbf{Z}}
+\def\bU{\mathbf{U}}
+\def\bV{\mathbf{V}}
+\def\bW{\mathbf{W}}
+\def\bI{\mathbf{I}}
+\def\bH{\mathbf{H}}
+\def\bS{\mathbf{S}}
+\def\bD{\mathbf{D}}
+\def\bbeta{\boldsymbol \beta}
+\def\btheta{\boldsymbol \theta}
+\def\bmu{\boldsymbol \mu}
+\def\bSigma{\boldsymbol \Sigma}
+\def\bLambda{\boldsymbol \Lambda}
+\def\beps{\boldsymbol \epsilon}
+\def\T{\text{T}}
+\def\E{\mathrm{E}}
+\def\var{\mathrm{Var}}
+\def\cov{\mathrm{Cov}}
+\def\cor{\mathrm{Corr}}
+\def\se{\mathrm{se}}
+\def\bias{\mathrm{bias}}
+\def\mse{\mathrm{MSE}}
+\def\R{\mathbb{R}}
+\def\P{\mathrm{P}}
+\def\iid{\stackrel{\text{iid}}{\sim}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+```{r}
+#| label: setup
+#| include: false
+#| eval: true
+library(knitr)
+library(ggplot2)
+knitr::opts_chunk$set(
+    fig.asp = 0.618,
+    fig.align = "center",
+    out.width = "100%",
+    fig.retina = 3,
+    fig.path = "./images/15-jackknife/",
+    message = FALSE,
+    warning = FALSE,
+    global.par = TRUE
+)
+options(
+  htmltools.dir.version = FALSE,
+  dplyr.print_min = 6, 
+  dplyr.print_max = 6,
+  tibble.width = 80,
+  width = 80,
+  digits = 4
+  )
+hook_output <- knitr::knit_hooks$get("output")
+knitr::knit_hooks$set(output = function(x, options) {
+  lines <- options$output.lines
+  if (is.null(lines)) {
+    return(hook_output(x, options))  # pass to default hook
+  }
+  x <- unlist(strsplit(x, "\n"))
+  more <- "..."
+  if (length(lines)==1) {        # first n lines
+    if (length(x) > lines) {
+      # truncate the output, but add ....
+      x <- c(head(x, lines), more)
+    }
+  } else {
+    x <- c(more, x[lines], more)
+  }
+  # paste these lines together
+  x <- paste(c(x, ""), collapse = "\n")
+  hook_output(x, options)
+})
+ggplot2::theme_set(ggplot2::theme_bw(base_size = 16))
+```
+
+# The Jackknife and Resampling Applications
+
+<h2> The jackknife: bias and standard error </h2>
+<h2> Why it works, pseudovalues, and when it fails </h2>
+<h2> Jackknife vs. bootstrap </h2>
+<h2> Jackknife-after-bootstrap </h2>
+<h2> Resampling for regression models and influence </h2>
+
+::: notes
+- Rizzo 8.2 and Chapter 9, with material from A. I. McIntosh, "The Jackknife Estimation Method" (lecture notes, previously posted as Chapt8-Jackknife.pdf).
+:::
+
+```{r}
+#| include: false
+library(boot)
+patch <- data.frame(
+  z = c(8406, 2342, 8187, 8459, 4795, 3516, 4796, 10238),
+  y = c(-1200, 2601, -2705, 1982, -1290, 351, -638, -2719))
+iron <- as.data.frame(matrix(scan("data/iron.dat", quiet = TRUE), ncol = 2, byrow = TRUE))
+names(iron) <- c("chemical", "magnetic")
+```
+
+## Resampling Methods: The Family
+
+- **Bootstrap** (Efron, 1979): resample $n$ points **with** replacement from the data; estimate the sampling distribution of $\hat\theta$.
+- **Permutation tests:** permute labels to obtain the null distribution of a test statistic (Rizzo Ch 10).
+- **Jackknife** (Quenouille, 1949; named by Tukey, 1956): leave out one observation at a time, i.e., resample **without** replacement, $n-1$ points. Originally for **bias correction**; Tukey added variance estimates and approximate confidence limits.
+
+## Jackknife Samples and Replicates
+
+- The $i$th **delete-1 jackknife sample**: $x_{(i)} = (x_1,\dots,x_{i-1},x_{i+1},\dots,x_n)$; there are exactly $n$ of them.
+- The $i$th **jackknife replicate**: $\hat\theta_{(i)} = s(x_{(i)})$; their average $\bar{\hat\theta}_{(\cdot)} = \frac1n\sum_i\hat\theta_{(i)}$.
+
+::: fact
+$$
+\widehat\bias_{\text{jack}} = (n-1)\big(\bar{\hat\theta}_{(\cdot)} - \hat\theta\big),\qquad
+\widehat\se_{\text{jack}} = \sqrt{\frac{n-1}{n}\sum_{i=1}^n\big(\hat\theta_{(i)} - \bar{\hat\theta}_{(\cdot)}\big)^2}.
+$$
+:::
+
+- Deterministic: no random numbers, only $n$ recomputations.
+
+## Why the Factor $(n-1)/n$? The Sample Mean
+
+For $\hat\theta = \bar x$: $\hat\theta_{(i)} = \dfrac{n\bar x - x_i}{n-1}$ and $\bar{\hat\theta}_{(\cdot)} = \bar x$, so
+
+$$
+\hat\theta_{(i)} - \bar{\hat\theta}_{(\cdot)} = \frac{\bar x - x_i}{n-1}
+\quad\Rightarrow\quad
+\frac{n-1}{n}\sum_{i=1}^n\big(\hat\theta_{(i)}-\bar{\hat\theta}_{(\cdot)}\big)^2 = \frac{1}{n(n-1)}\sum_{i=1}^n(x_i-\bar x)^2 = \frac{S^2}{n}.
+$$
+
+The jackknife SE of the mean is **exactly** the usual $S/\sqrt n$.
+
+```{r}
+set.seed(4750); x <- rexp(12); n <- length(x)
+th.jack <- sapply(1:n, function(i) mean(x[-i]))
+c(jackknife = sqrt((n - 1) / n * sum((th.jack - mean(th.jack))^2)), usual = sd(x) / sqrt(n))
+```
+
+## Why the Factor $(n-1)$ in the Bias?
+
+Suppose $\E[\hat\theta_n] = \theta + \dfrac{b_1(\theta)}{n} + \dfrac{b_2(\theta)}{n^2} + \cdots$. Each replicate uses $n-1$ points, so
+
+$$
+\E\big[\bar{\hat\theta}_{(\cdot)}\big] - \E[\hat\theta] = \frac{b_1}{n-1} - \frac{b_1}{n} + O(n^{-3}) = \frac{b_1}{n(n-1)} + O(n^{-3}).
+$$
+
+Multiplying by $(n-1)$ estimates the leading bias $b_1/n$. The **bias-corrected** estimator
+
+$$
+\hat\theta_{\text{jack}} = \hat\theta - \widehat\bias_{\text{jack}} = n\hat\theta - (n-1)\bar{\hat\theta}_{(\cdot)}
+$$
+
+has bias $O(n^{-2})$: the $1/n$ term cancels.
+
+**Check:** for $\hat\theta = \frac1n\sum(x_i-\bar x)^2$ (bias $-\sigma^2/n$), $\widehat\bias_{\text{jack}} = -S^2/n$ and $\hat\theta_{\text{jack}} = S^2$.
+
+```{r}
+pvar <- function(x) mean((x - mean(x))^2)
+th.jack <- sapply(1:n, function(i) pvar(x[-i]))
+c(bias_jack = (n - 1) * (mean(th.jack) - pvar(x)), minus_S2_over_n = -var(x) / n)
+```
+
+## Example 8.6: Jackknife Bias of the Patch Ratio
+
+```{r}
+n <- nrow(patch); y <- patch$y; z <- patch$z
+theta.hat <- mean(y) / mean(z)
+theta.jack <- numeric(n)
+for (i in 1:n) theta.jack[i] <- mean(y[-i]) / mean(z[-i])
+bias <- (n - 1) * (mean(theta.jack) - theta.hat)
+c(theta.hat = theta.hat, jackknife_bias = bias)
+```
+
+## Example 8.7: Jackknife SE of the Patch Ratio
+
+```{r}
+se <- sqrt((n - 1) * mean((theta.jack - mean(theta.jack))^2))
+c(jackknife_se = se)
+set.seed(4750)
+c(bootstrap_se = sd(boot(patch, function(d, i) mean(d$y[i]) / mean(d$z[i]), R = 2000)$t))
+```
+
+## Example 8.8: Failure of the Jackknife
+
+The jackknife can fail when the statistic is **not smooth**. Median of 10 integers:
+
+```{r}
+n <- 10; set.seed(4750)
+x <- sample(1:100, size = n)
+M <- numeric(n)
+for (i in 1:n) M[i] <- median(x[-i])
+Mbar <- mean(M)
+print(sort(M))                                   # only two distinct values!
+c(jackknife_se = sqrt((n - 1) / n * sum((M - Mbar)^2)),
+  bootstrap_se = sd(replicate(1000, median(sample(x, replace = TRUE)))))
+```
+
+::: alert
+Fix for non-smooth statistics: the **delete-$d$ jackknife** with $\sqrt n < d < n-1$ (Shao and Wu, 1989):
+$\widehat\se_{d\text{-jack}} = \left\{\frac{n-d}{d\binom nd}\sum_z\big(\hat\theta_{(z)} - \bar{\hat\theta}_{(\cdot)}\big)^2\right\}^{1/2}$.
+:::
+
+## Delete-$d$ Jackknife for the Median
+
+```{r}
+djack_se <- function(x, d, stat = median, maxsub = 5000) {
+  n <- length(x)
+  subs <- if (choose(n, d) <= maxsub) combn(n, d) else replicate(maxsub, sample(n, d))  # all or a random subset
+  th <- apply(subs, 2, function(z) stat(x[-z]))
+  sqrt((n - d) / d * mean((th - mean(th))^2))
+}
+set.seed(4750); x <- rnorm(40)
+c(delete1 = djack_se(x, 1), delete10 = djack_se(x, 10),
+  bootstrap = sd(replicate(2000, median(sample(x, replace = TRUE)))),
+  asymptotic = sqrt(pi / 2) / sqrt(40))
+```
+
+## Pseudovalues
+
+$$
+\tilde\theta_i = n\hat\theta - (n-1)\hat\theta_{(i)},\qquad \hat\theta_{\text{jack}} = \frac1n\sum_i\tilde\theta_i,\qquad \widehat\se_{\text{jack}} = \frac{s_{\tilde\theta}}{\sqrt n}.
+$$
+
+- Tukey: treat pseudovalues **as if** they were iid; a $t$-type interval $\hat\theta_{\text{jack}}\pm t_{n-1}\,\widehat\se_{\text{jack}}$.
+- Efron and Tibshirani: this interval is not much better than normal theory; prefer bootstrap intervals.
+
+```{r}
+n <- nrow(patch); pseudo <- n * theta.hat - (n - 1) * theta.jack
+c(theta_jack = mean(pseudo), se = sd(pseudo) / sqrt(n))
+```
+
+## Example: Estimating the Upper Bound of a Uniform
+
+$X\sim U(0,\theta)$, $\hat\theta = X_{(n)}$ with $\E X_{(n)} = \frac{n}{n+1}\theta$ (biased). Here $\bar{\hat\theta}_{(\cdot)} = \frac{n-1}{n}X_{(n)} + \frac1nX_{(n-1)}$, so
+
+$$
+\hat\theta_{\text{jack}} = X_{(n)} + \frac{n-1}{n}\big(X_{(n)} - X_{(n-1)}\big).
+$$
+
+```{r}
+set.seed(4750); N <- 20000
+res <- sapply(c(10, 30, 100), function(n) {
+  r <- replicate(N, { s <- sort(runif(n, 0, 5)); mx <- s[n]; jk <- mx + (n - 1) / n * (mx - s[n - 1])
+                      c(abs(5 - jk) < abs(5 - mx), abs(5 - jk), abs(5 - mx)) })
+  rowMeans(r)
+})
+dimnames(res) <- list(c("P(|jack err| < |max err|)", "mean |jack - 5|", "mean |max - 5|"), c("n=10", "n=30", "n=100"))
+round(res, 4)
+```
+
+::: notes
+- McIntosh's simulation: the jackknife estimate is closer about 68% of the time. Of course (n+1)/n * max is exactly unbiased here, but the jackknife does not need to know the distribution.
+:::
+
+## Jackknife vs. Bootstrap
+
+- Efron and Tibshirani: the jackknife variance estimate is $\frac{n}{n-1}$ times the **bootstrap variance of a linear approximation** $T_{\text{LIN}}(\mathbf P^*) = c_0 + (\mathbf P^* - \mathbf P_0)^\T\mathbf U$ to the statistic, where $\mathbf P^*$ is the vector of resampling proportions.
+- So the jackknife is excellent for **smooth (nearly linear)** statistics and poor for non-smooth ones (median, quantiles).
+- It assumes **iid** data: not for time series or correlated data without modification (block jackknife).
+
+| | Jackknife | Bootstrap |
+|---|---|---|
+| Resamples | $n$ deterministic | $B$ random |
+| Bias, SE | yes (smooth statistics) | yes |
+| Confidence intervals | rough | yes (percentile, BCa, $t$) |
+| Non-smooth statistics | fails (delete-1) | works |
+| Used for | BCa acceleration, influence, JaB | most inference |
+
+# Jackknife-after-Bootstrap (Rizzo 9.1)
+
+## How Accurate Is $\widehat{\se}_B$?
+
+$\widehat\se_B(\hat\theta)$ is itself random. To estimate **its** standard error, leave out $x_i$, and recompute $\widehat\se_B$ using only the bootstrap samples that **do not contain** $x_i$: no new resampling!
+
+- $J(i)$ = indices of bootstrap samples not containing $x_i$; $B(i) = |J(i)|$.
+
+$$
+\widehat\se_{B(i)} = \sqrt{\frac{1}{B(i)}\sum_{j\in J(i)}\big[\hat\theta^{(j)} - \bar{\hat\theta}_{(J(i))}\big]^2},\qquad
+\widehat\se\big(\widehat\se_B\big) = \widehat\se_{\text{jack}}\big(\widehat\se_{B(1)},\dots,\widehat\se_{B(n)}\big).
+$$
+
+- On average $B(i)\approx B(1-1/n)^n\approx 0.37B$.
+
+## Examples 9.1 - 9.2: JaB for the Patch Data
+
+```{r}
+set.seed(1111)
+theta.boot <- function(patch, i) mean(patch[i, "y"]) / mean(patch[i, "z"])
+boot.out <- boot(patch, statistic = theta.boot, R = 2000)
+A <- boot.array(boot.out)                       # B x n matrix of frequencies
+theta.b <- boot.out$t
+n <- NROW(patch); jack.se <- numeric(n)
+for (i in 1:n) {
+  keep <- which(A[, i] == 0)                    # samples that omit x_i
+  jack.se[i] <- sd(theta.b[keep])
+}
+c(se_boot = sd(theta.b), se_of_se = sqrt((n - 1) * mean((jack.se - mean(jack.se))^2)),
+  avg_B_i = mean(colSums(A == 0)))
+```
+
+## Example 9.11: The Jackknife-after-Bootstrap Plot
+
+```{r}
+#| fig-asp: 0.45
+jack.after.boot(boot.out, useJ = TRUE, stinf = FALSE)
+```
+
+- For each left-out observation: percentiles of $\hat\theta^* - \hat\theta$ (vertical) against the jackknife influence value (horizontal). Points far to the left/right are **influential**.
+
+# Resampling for Regression Models (Rizzo 9.2)
+
+## Two Ways to Bootstrap a Regression
+
+:::: {.columns}
+::: {.column width="50%"}
+**Resampling cases** (pairs)
+
+- Resample rows $(x_i, y_i)$ with replacement; refit.
+- Robust to heteroscedasticity and model misspecification.
+- Treats $X$ as random.
+:::
+::: {.column width="50%"}
+**Resampling errors** (residuals)
+
+- Fit; resample residuals $\hat e_j^*$; set $y_i^* = \hat y_i + \hat e^*_i$; refit.
+- Treats $X$ as fixed; assumes the model and iid errors.
+- Use **modified residuals** $r_i = \hat e_i/\sqrt{1-h_{ii}}$ (centered).
+:::
+::::
+
+## Examples 9.5 - 9.6: Resampling Cases (Iron Data)
+
+```{r}
+L <- lm(magnetic ~ chemical, data = iron)
+m <- 2000; n <- NROW(iron); L1 <- numeric(m); set.seed(4750)
+for (b in 1:m) {
+  i <- sample(1:n, replace = TRUE)
+  L1[b] <- coef(lm(magnetic ~ chemical, data = iron[i, ]))[2]
+}
+beta_case <- function(dat, i) coef(lm(magnetic ~ chemical, data = dat[i, ]))[2]
+set.seed(4750); boot.cases <- boot(iron, beta_case, R = 2000)
+c(slope = coef(L)[2], se_lm = summary(L)$coef[2, 2], se_loop = sd(L1), se_boot = sd(boot.cases$t))
+boot.ci(boot.cases, type = c("perc", "bca"))
+```
+
+## Example 9.4: The `mammals` Data
+
+```{r}
+#| fig-asp: 0.36
+mammals <- MASS::mammals
+par(mfrow = c(1, 2))
+plot(brain ~ body, data = mammals, pch = 16, main = "raw scale")
+plot(log(brain) ~ log(body), data = mammals, pch = 16, main = "log-log scale")
+L <- lm(log(brain) ~ log(body), data = mammals); abline(L, col = "red", lwd = 2)
+```
+
+## Examples 9.7 - 9.9: Resampling (Modified) Errors
+
+```{r}
+y <- log(mammals$brain); x <- log(mammals$body)
+L <- lm(y ~ x); n <- length(y)
+r <- residuals(L) / sqrt(1 - hatvalues(L)); r <- r - mean(r)     # modified, centered residuals
+set.seed(4750); m <- 2000; estsE <- numeric(m)
+for (b in 1:m) {
+  ystar <- fitted(L) + sample(r, replace = TRUE)
+  estsE[b] <- coef(lm(ystar ~ x))[2]
+}
+model_based <- function(dat, i) { ystar <- dat$fit + dat$r[i]; coef(lm(ystar ~ dat$x))[2] }
+dat <- data.frame(x = x, fit = fitted(L), r = r)
+set.seed(4750); boot.err <- boot(dat, model_based, R = 2000)
+c(slope = coef(L)[2], se_lm = summary(L)$coef[2, 2], se_errors = sd(estsE), se_boot_fn = sd(boot.err$t))
+```
+
+## Influence (Rizzo 9.3)
+
+- The **empirical influence value** of $x_i$ measures how much $\hat\theta$ changes when $x_i$ is up-weighted; the jackknife approximation is $l_{\text{jack},i} = (n-1)(\hat\theta - \hat\theta_{(i)})$.
+- $\sum_i l_i^2/n^2$ approximates $\var(\hat\theta)$ (the **nonparametric delta method**).
+
+**Example 9.10 (patch ratio):**
+
+```{r}
+L.inf <- empinf(boot.out, type = "jack")
+round(L.inf, 4)
+c(se_delta = sqrt(sum(L.inf^2)) / n, se_boot = sd(boot.out$t))
+```
+
+## Summary
+
+::: instructions
+- Jackknife: $n$ leave-one-out replicates; $\widehat\bias = (n-1)(\bar{\hat\theta}_{(\cdot)}-\hat\theta)$, $\widehat\se = \sqrt{\tfrac{n-1}{n}\sum(\hat\theta_{(i)}-\bar{\hat\theta}_{(\cdot)})^2}$.
+- Exact for the mean; removes $O(1/n)$ bias; fails for non-smooth statistics (use delete-$d$ or the bootstrap).
+- Jackknife-after-bootstrap: SE of bootstrap estimates and influence diagnostics with **no extra resampling**.
+- Regression: resample cases (robust) or errors (model-based, use modified residuals).
+:::

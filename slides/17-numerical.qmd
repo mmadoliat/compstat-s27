@@ -1,0 +1,454 @@
+---
+title: "Introduction to Numerical Methods in R 🔢"
+subtitle: "MATH 4750 / MSSC 5750 Computational Statistics"
+format: 
+  revealjs:
+    code-line-numbers: false
+    html-math-method:
+      method: mathjax
+      url: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    highlight-style: arrow
+    code-block-bg: true
+    self-contained: false
+    slide-number: c/t    
+    incremental: false
+    width: 1800
+    height: 1000
+    margin: 0.05
+    logo: "logo.png"
+    footer: "[mmadoliat.github.io/compstat-s27](https://mmadoliat.github.io/compstat-s27/)"
+    theme: ["simple", "slides.scss"]
+    multiplex: false
+    code-link: true
+    fig-cap-location: bottom
+    fig-align: center
+    transition: none ## fade slide convex concave zoom
+    title-slide-attributes:
+      data-background-image: mu-bg.png
+      data-background-size: stretch
+      data-slide-number: none
+editor: source
+execute:
+  freeze: auto
+  echo: true
+  purl: true
+---
+
+#  {visibility="hidden"}
+
+\def\bx{\mathbf{x}}
+\def\by{\mathbf{y}}
+\def\bz{\mathbf{z}}
+\def\bu{\mathbf{u}}
+\def\bv{\mathbf{v}}
+\def\bw{\mathbf{w}}
+\def\bX{\mathbf{X}}
+\def\bY{\mathbf{Y}}
+\def\bZ{\mathbf{Z}}
+\def\bU{\mathbf{U}}
+\def\bV{\mathbf{V}}
+\def\bW{\mathbf{W}}
+\def\bI{\mathbf{I}}
+\def\bH{\mathbf{H}}
+\def\bS{\mathbf{S}}
+\def\bD{\mathbf{D}}
+\def\bbeta{\boldsymbol \beta}
+\def\btheta{\boldsymbol \theta}
+\def\bmu{\boldsymbol \mu}
+\def\bSigma{\boldsymbol \Sigma}
+\def\bLambda{\boldsymbol \Lambda}
+\def\beps{\boldsymbol \epsilon}
+\def\T{\text{T}}
+\def\E{\mathrm{E}}
+\def\var{\mathrm{Var}}
+\def\cov{\mathrm{Cov}}
+\def\cor{\mathrm{Corr}}
+\def\se{\mathrm{se}}
+\def\bias{\mathrm{bias}}
+\def\mse{\mathrm{MSE}}
+\def\R{\mathbb{R}}
+\def\P{\mathrm{P}}
+\def\iid{\stackrel{\text{iid}}{\sim}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+```{r}
+#| label: setup
+#| include: false
+#| eval: true
+library(knitr)
+library(ggplot2)
+knitr::opts_chunk$set(
+    fig.asp = 0.618,
+    fig.align = "center",
+    out.width = "100%",
+    fig.retina = 3,
+    fig.path = "./images/17-numerical/",
+    message = FALSE,
+    warning = FALSE,
+    global.par = TRUE
+)
+options(
+  htmltools.dir.version = FALSE,
+  dplyr.print_min = 6, 
+  dplyr.print_max = 6,
+  tibble.width = 80,
+  width = 80,
+  digits = 4
+  )
+hook_output <- knitr::knit_hooks$get("output")
+knitr::knit_hooks$set(output = function(x, options) {
+  lines <- options$output.lines
+  if (is.null(lines)) {
+    return(hook_output(x, options))  # pass to default hook
+  }
+  x <- unlist(strsplit(x, "\n"))
+  more <- "..."
+  if (length(lines)==1) {        # first n lines
+    if (length(x) > lines) {
+      # truncate the output, but add ....
+      x <- c(head(x, lines), more)
+    }
+  } else {
+    x <- c(more, x[lines], more)
+  }
+  # paste these lines together
+  x <- paste(c(x, ""), collapse = "\n")
+  hook_output(x, options)
+})
+ggplot2::theme_set(ggplot2::theme_bw(base_size = 16))
+```
+
+# Introduction to Numerical Methods in R
+
+<h2> Lecture A: floating-point arithmetic, numerical accuracy, series and derivatives </h2>
+<h2> Lecture B: root finding, numerical integration, maximum likelihood, an application </h2>
+
+::: notes
+- Rizzo Chapter 13. Lecture A: computer arithmetic and why "obvious" code fails. Lecture B: the workhorses uniroot, integrate, optimize/mle.
+:::
+
+# Lecture A: Computer Arithmetic {#part-a}
+
+## Example 13.0: Some Brain Teasers
+
+::: question
+TRUE or FALSE?
+:::
+
+:::: {.columns}
+::: {.column width="50%"}
+```{r}
+1 == 1
+3 - 2 == 1
+0.3 - 0.2 == 0.1
+0.4 - 0.2 == 0.2
+```
+:::
+::: {.column width="50%"}
+```{r}
+0 == 0
+1 - 1 == 0
+1 - 1 + .1 == .1
+1 + .1 - 1 == .1
+```
+:::
+::::
+
+```{r}
+as.integer(2^31 - 1)
+as.integer(2^31)              # integers are 32-bit
+sprintf("%.20f", 0.1)          # 0.1 has no exact binary representation
+```
+
+## Floating-Point Numbers
+
+- Doubles (IEEE 754): $\pm(1.b_1b_2\dots b_{52})_2\times 2^{e}$, 53 significant bits $\approx$ 15-16 decimal digits.
+- **Machine epsilon** $\epsilon = 2^{-52}$: the gap between 1 and the next double.
+
+```{r}
+.Machine$double.eps; 2^-52
+1 + .Machine$double.eps == 1; 1 + .Machine$double.eps / 2 == 1
+.Machine$double.xmax; .Machine$double.xmin
+c(2^1023 * 2, 2^-1074 / 2)      # overflow to Inf, underflow to 0
+```
+
+- Relative error of representing $x$ is at most $\epsilon/2$; errors **accumulate** and are **amplified** by subtraction of nearly equal numbers (catastrophic cancellation).
+
+## Catastrophic Cancellation
+
+```{r}
+#| fig-asp: 0.33
+set.seed(4750)
+n <- 1000; M <- 2^100
+A <- rnorm(n, mean = M, sd = M); B <- rnorm(n, mean = -M, sd = M)
+c(all_equal = isTRUE(all.equal(A + B - A - B, rep(0, n))), exactly_zero = sum(A + B - A - B == 0),
+  max_abs_error = max(abs(A + B - A - B)))
+par(mfrow = c(1, 2)); boxplot(A - A + B - B, main = "A - A + B - B", horizontal = TRUE)
+boxplot(A + B - A - B, main = "A + B - A - B", horizontal = TRUE)
+```
+
+- Floating-point addition is **not associative**.
+
+## Example: The Sample Variance, Two Ways
+
+$$
+S^2 = \frac{1}{n-1}\sum(x_i-\bar x)^2 \quad\text{vs.}\quad S^2 = \frac{\sum x_i^2 - n\bar x^2}{n-1}
+$$
+
+```{r}
+set.seed(4750); x <- rnorm(1000, mean = 1e9, sd = 1)    # true variance 1
+two_pass <- sum((x - mean(x))^2) / (length(x) - 1)
+one_pass <- (sum(x^2) - length(x) * mean(x)^2) / (length(x) - 1)
+c(var = var(x), two_pass = two_pass, textbook_one_pass = one_pass)
+```
+
+::: danger
+The "computational formula" from intro statistics is numerically unstable. Use two-pass or **Welford's** online algorithm (our R6 example in the OOP lecture).
+:::
+
+## Example 13.1: Identical and Nearly Equal
+
+```{r}
+isTRUE(all.equal(.2, .3 - .1))
+all.equal(.2, .3)            # not a logical value
+isTRUE(all.equal(.2, .3))    # always a logical value
+x <- 1:4; y <- 2
+x == y                       # not necessarily a single logical value
+identical(x, y); identical(y, 2)
+```
+
+- Use `identical()` in `if`/`while` conditions; `isTRUE(all.equal(...))` for numerical near-equality (tolerance $\approx 1.5\times10^{-8}$).
+
+## Example 13.2: Ratio of Two Large Numbers
+
+Evaluate $\dfrac{\Gamma((n-1)/2)}{\Gamma(1/2)\Gamma((n-2)/2)}$ for $n = 400$:
+
+```{r}
+n <- 400
+(gamma((n - 1) / 2) / (sqrt(pi) * gamma((n - 2) / 2)))         # Inf / Inf
+exp(lgamma((n - 1) / 2) - lgamma((n - 2) / 2)) / sqrt(pi)        # work on the log scale
+```
+
+::: tip
+**Work on the log scale:** `lgamma`, `lchoose`, `lfactorial`, `log1p`, `expm1`, `dnorm(..., log = TRUE)`, `pnorm(..., log.p = TRUE)`, and the **log-sum-exp** trick: $\log\sum e^{a_i} = m + \log\sum e^{a_i - m}$, $m = \max a_i$.
+:::
+
+```{r}
+a <- c(-1000, -1001, -1002)
+c(naive = log(sum(exp(a))), logsumexp = max(a) + log(sum(exp(a - max(a)))))
+c(log(1 + 1e-17), log1p(1e-17))
+```
+
+## Example 13.3: Taylor Expansion
+
+$\sin x = \sum_{k=0}^n\frac{(-1)^k}{(2k+1)!}x^{2k+1}$. Compare a loop with a vectorized polynomial:
+
+```{r}
+x <- pi / 6; k <- 0:11
+c(series = sum((-1)^k * x^(2 * k + 1) / factorial(2 * k + 1)), sin = sin(x))
+system.time(for (i in 1:20000) {                  # loop
+  s <- 0; for (j in 0:11) s <- s + (-1)^j * x^(2 * j + 1) / factorial(2 * j + 1) })
+system.time(for (i in 1:20000) sum((-1)^k * x^(2 * k + 1) / factorial(2 * k + 1)))   # vectorized
+```
+
+## Series for Large Arguments: Order Matters
+
+```{r}
+x <- 20
+naive <- sum((-1)^(0:60) * x^(2 * (0:60) + 1) / factorial(2 * (0:60) + 1))
+reduced <- { xr <- x %% (2 * pi); sum((-1)^(0:30) * xr^(2 * (0:30) + 1) / factorial(2 * (0:30) + 1)) }
+c(naive = naive, range_reduced = reduced, sin = sin(20))
+```
+
+- Terms like $20^{41}/41!$ are huge and alternate in sign: cancellation destroys accuracy. Reduce the argument first.
+
+## Numerical Derivatives (cf. Examples 13.4 - 13.5)
+
+Forward difference $\frac{f(x+h) - f(x)}{h}$ has truncation error $O(h)$ and rounding error $O(\epsilon/h)$: the best $h\approx\sqrt\epsilon$. Central differences: $O(h^2)$, best $h\approx\epsilon^{1/3}$.
+
+```{r}
+#| fig-asp: 0.36
+f <- function(x) exp(x); x0 <- 1; h <- 10^seq(-16, -1, by = .25)
+fwd <- abs((f(x0 + h) - f(x0)) / h - exp(1))
+ctr <- abs((f(x0 + h) - f(x0 - h)) / (2 * h) - exp(1))
+plot(h, fwd, log = "xy", type = "l", lwd = 3, ylab = "absolute error", main = "Truncation vs rounding error")
+lines(h, ctr, lwd = 3, col = "#C0392B"); abline(v = c(sqrt(.Machine$double.eps), .Machine$double.eps^(1/3)), lty = 2)
+legend("bottom", c("forward", "central"), col = c(1, "#C0392B"), lwd = 3, bty = "n")
+```
+
+## Derivative of the Zeta Function (Example 13.5)
+
+$\zeta(a) = \sum_{i\ge1}i^{-a}$, $a > 1$, and $\zeta'(a) = -\sum_{i\ge1}\frac{\log i}{i^a}$. Summing the series directly converges slowly; the book uses a Laurent expansion with Stieltjes constants. A simple check:
+
+```{r}
+zeta <- function(a, N = 1e6) { i <- 1:N; sum(i^-a) + N^(1 - a) / (a - 1) }   # tail correction
+dzeta_series <- function(a, N = 1e6) { i <- 1:N; -sum(log(i) * i^-a) - N^(1 - a) * (log(N) / (a - 1) + 1 / (a - 1)^2) }
+a <- 2; h <- 1e-4
+c(series = dzeta_series(a), central_difference = (zeta(a + h) - zeta(a - h)) / (2 * h), known = -0.9375482543)
+```
+
+# Lecture B: Root Finding, Integration, MLE {#part-b}
+
+## Root Finding: Bisection
+
+If $f$ is continuous on $[a,b]$ and $f(a)f(b) < 0$, a root lies in $(a,b)$. Halve the interval each step: error after $k$ steps $\le (b-a)/2^k$ (linear convergence).
+
+**Example 13.6.** Solve $a^2 + y^2 + \dfrac{2ay}{n-1} = n-2$ for $y$, with $a = 0.5$, $n = 20$. Exact: $y = -\dfrac{a}{n-1}\pm\sqrt{n-2-a^2+\left(\dfrac{a}{n-1}\right)^2}$ (the 2nd edition prints $+a^2$ under the root, a typo).
+
+```{r}
+f <- function(y, a, n) a^2 + y^2 + 2 * a * y / (n - 1) - (n - 2)
+a <- 0.5; n <- 20
+b0 <- 0; b1 <- 5* n; it <- 0; eps <- .Machine$double.eps^0.25
+y <- seq(b0, b1, length = 100)
+r <- c(b0, b1); f0 <- f(b0, a, n); f1 <- f(b1, a, n)
+while (it < 1000 && abs(r[2] - r[1]) > eps) {
+  it <- it + 1; mid <- mean(r); fm <- f(mid, a, n)
+  if (fm == 0) { r <- c(mid, mid); break }
+  if (f0 * fm < 0) { r[2] <- mid; f1 <- fm } else { r[1] <- mid; f0 <- fm }
+}
+c(root = mean(r), iterations = it, exact = -a / (n - 1) + sqrt(n - 2 - a^2 + (a / (n - 1))^2))
+```
+
+## Example 13.7: Brent's Method with `uniroot`
+
+Brent's method combines bisection, the secant method, and inverse quadratic interpolation: guaranteed and fast.
+
+```{r}
+out <- uniroot(function(y) f(y, a, n), lower = 0, upper = 5 * n)
+unlist(out[c("root", "f.root", "iter", "estim.prec")])
+```
+
+**Newton-Raphson:** $x_{k+1} = x_k - f(x_k)/f'(x_k)$, quadratic convergence near the root but no guarantee.
+
+```{r}
+newton <- function(f, df, x, tol = 1e-12, maxit = 50) {
+  for (k in 1:maxit) { step <- f(x) / df(x); x <- x - step; if (abs(step) < tol) break }
+  c(root = x, iterations = k)
+}
+newton(function(y) f(y, a, n), function(y) 2 * y + 2 * a / (n - 1), x = 1)
+```
+
+## Numerical Integration: `integrate()`
+
+Adaptive Gauss-Kronrod quadrature (QUADPACK). Handles infinite limits by transformation.
+
+**Example 13.8.**
+
+```{r}
+integrate(dnorm, -1.96, 1.96)
+integrate(dnorm, -Inf, Inf)
+integrate(function(y) exp(-y^2 / 2) / sqrt(2 * pi), 0, Inf)
+```
+
+::: danger
+`integrate` must receive a **vectorized** integrand, and can be fooled by narrow peaks: `integrate(dnorm, 0, 20000)` claims about 0!
+:::
+
+```{r}
+integrate(dnorm, 0, 20000)$value; integrate(dnorm, 0, Inf)$value
+```
+
+## Quadrature by Hand: Trapezoid and Simpson
+
+```{r}
+trap <- function(f, a, b, m) { x <- seq(a, b, length = m + 1); h <- (b - a) / m; h * (sum(f(x)) - (f(a) + f(b)) / 2) }
+simpson <- function(f, a, b, m) {                    # m even
+  x <- seq(a, b, length = m + 1); h <- (b - a) / m
+  h / 3 * (f(a) + f(b) + 4 * sum(f(x[seq(2, m, 2)])) + 2 * sum(f(x[seq(3, m - 1, 2)])))
+}
+g <- function(x) exp(-x) / (1 + x^2); exact <- integrate(g, 0, 1, rel.tol = 1e-12)$value
+sapply(c(4, 16, 64), function(m) c(m = m, trapezoid_err = trap(g, 0, 1, m) - exact, simpson_err = simpson(g, 0, 1, m) - exact))
+```
+
+- Errors $O(m^{-2})$ (trapezoid) and $O(m^{-4})$ (Simpson) in 1-d, versus $O(m^{-1/2})$ for Monte Carlo (Ch 6), but quadrature degrades quickly in higher dimensions.
+
+## Example 13.9: Density of the Sample Correlation
+
+For bivariate normal data with correlation $\rho$, the density of $r$ is
+
+$$
+f(r) = \frac{(n-2)(1-\rho^2)^{(n-1)/2}(1-r^2)^{(n-4)/2}}{\pi}\int_0^\infty\frac{dw}{(\cosh w - \rho r)^{n-1}},\quad -1<r<1.
+$$
+
+```{r}
+.dcorr <- function(r, N, rho = 0) {
+  if (abs(r) > 1 || abs(rho) > 1) return(0)
+  if (N < 4) return(NA)
+  if (isTRUE(all.equal(rho, 0.0))) {
+    a <- exp(lgamma((N - 1) / 2) - lgamma((N - 2) / 2))
+    return(a * (1 - r^2)^((N - 4) / 2) / sqrt(pi))
+  }
+  f <- function(w, R, N, rho) (cosh(w) - rho * R)^(1 - N)        # integrand
+  i <- integrate(f, lower = 0, upper = Inf, R = r, N = N, rho = rho)$value
+  c1 <- (N - 2) * (1 - rho^2)^((N - 1) / 2)
+  c2 <- (1 - r^2)^((N - 4) / 2) / pi
+  c1 * c2 * i
+}
+dcorr <- function(r, N, rho = 0) sapply(r, .dcorr, N = N, rho = rho)
+integrate(dcorr, -1, 1, N = 10, rho = 0.5)$value                     # a proper density?
+```
+
+## Checking the Density by Simulation
+
+```{r}
+#| fig-asp: 0.38
+set.seed(4750); N <- 10; rho <- 0.5
+rs <- replicate(20000, cor(MASS::mvrnorm(N, c(0, 0), matrix(c(1, rho, rho, 1), 2)))[1, 2])
+hist(rs, prob = TRUE, breaks = 60, col = "#FFCC00", main = "Sample correlation, n = 10, rho = 0.5", xlab = "r")
+curve(dcorr(x, N = N, rho = rho), add = TRUE, lwd = 3, col = "#003366", n = 200)
+curve(dcorr(x, N = N, rho = 0), add = TRUE, lwd = 2, lty = 2, n = 200)
+```
+
+## Maximum Likelihood Problems (Example 13.10)
+
+$Y_1, Y_2\iid\text{Exp}(\theta)$: $\ell(\theta) = 2\log\theta - \theta(y_1+y_2)$, $\hat\theta = 2/(y_1+y_2)$.
+
+```{r}
+y <- c(0.04304550, 0.50263474)
+mlogL <- function(theta = 1) -(length(y) * log(theta) - theta * sum(y))   # minus log-likelihood
+library(stats4)
+fit <- mle(mlogL)
+summary(fit)
+c(closed_form = 2 / sum(y))
+optimize(mlogL, lower = 0.01, upper = 50)$minimum                         # 1-d alternative
+```
+
+## Application: Evaluating an Expected Value (Examples 13.11 - 13.13)
+
+$X\sim\text{Pareto}(\sigma, \alpha = 1)$, $\bar F(x) = (\sigma/x)^\alpha$, $x\ge\sigma$. For $y>\sigma$ and $0<\beta<1$, evaluate $\E|y - X|^\beta$ (it arises in energy goodness-of-fit tests).
+
+```{r}
+f1 <- function(x, y, s, a, b) (abs(y - x))^b * a * s^a / x^(a + 1)     # the integrand |y-x|^b f(x)
+g1 <- function(y, s, a, b) {                                            # E|y-X|^b by numerical integration
+  if (y < s) return(NA)
+  integrate(f1, lower = s, upper = y, y = y, s = s, a = a, b = b)$value +
+    integrate(f1, lower = y, upper = Inf, y = y, s = s, a = a, b = b)$value
+}
+sapply(c(1.5, 2, 5, 10), g1, s = 1, a = 1, b = .5)
+set.seed(4750); X <- 1 / runif(1e6)                                     # Pareto(1, 1) by inverse transform
+sapply(c(1.5, 2, 5, 10), function(y) mean(abs(y - X)^.5))               # Monte Carlo check
+```
+
+::: notes
+- The book also derives a closed form as an infinite series (hypergeometric functions, VGAM/gsl) and compares it with integrate; the plot of E|y - X|^b versus y is Example 13.13.
+:::
+
+## Example 13.13: The Expected Distance Function
+
+```{r}
+#| fig-asp: 0.36
+ys <- seq(1.01, 20, length = 100)
+plot(ys, sapply(ys, g1, s = 1, a = 1, b = .5), type = "l", lwd = 3, col = "#003366",
+     xlab = "y", ylab = expression(E * "|" * y - X * "|"^beta), main = "Pareto(1, 1), beta = 0.5")
+```
+
+## Summary
+
+::: instructions
+- Doubles have about 16 significant digits; avoid `==` (use `isTRUE(all.equal())`), avoid subtracting nearly equal numbers, work on the log scale.
+- Derivatives: step size $\sqrt\epsilon$ (forward) or $\epsilon^{1/3}$ (central).
+- Roots: bisection (safe), Newton (fast), Brent's `uniroot` (both).
+- Integrals: `integrate()` (vectorize the integrand, beware of peaks), trapezoid/Simpson, Monte Carlo in high dimensions.
+- MLE: `optimize()` (1-d), `stats4::mle()`, `optim()` (next lecture).
+:::

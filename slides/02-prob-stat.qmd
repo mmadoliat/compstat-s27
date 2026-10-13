@@ -1,0 +1,387 @@
+---
+title: "Probability and Statistics Review 📊"
+subtitle: "MATH 4750 / MSSC 5750 Computational Statistics"
+format: 
+  revealjs:
+    code-line-numbers: false
+    html-math-method:
+      method: mathjax
+      url: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    highlight-style: arrow
+    code-block-bg: true
+    self-contained: false
+    slide-number: c/t    
+    incremental: false
+    width: 1800
+    height: 1000
+    margin: 0.05
+    logo: "logo.png"
+    footer: "[mmadoliat.github.io/compstat-s27](https://mmadoliat.github.io/compstat-s27/)"
+    theme: ["simple", "slides.scss"]
+    multiplex: false
+    code-link: true
+    fig-cap-location: bottom
+    fig-align: center
+    transition: none ## fade slide convex concave zoom
+    title-slide-attributes:
+      data-background-image: mu-bg.png
+      data-background-size: stretch
+      data-slide-number: none
+editor: source
+execute:
+  freeze: auto
+  echo: true
+  purl: true
+---
+
+#  {visibility="hidden"}
+
+\def\bx{\mathbf{x}}
+\def\by{\mathbf{y}}
+\def\bz{\mathbf{z}}
+\def\bu{\mathbf{u}}
+\def\bv{\mathbf{v}}
+\def\bw{\mathbf{w}}
+\def\bX{\mathbf{X}}
+\def\bY{\mathbf{Y}}
+\def\bZ{\mathbf{Z}}
+\def\bU{\mathbf{U}}
+\def\bV{\mathbf{V}}
+\def\bW{\mathbf{W}}
+\def\bI{\mathbf{I}}
+\def\bH{\mathbf{H}}
+\def\bS{\mathbf{S}}
+\def\bD{\mathbf{D}}
+\def\bbeta{\boldsymbol \beta}
+\def\btheta{\boldsymbol \theta}
+\def\bmu{\boldsymbol \mu}
+\def\bSigma{\boldsymbol \Sigma}
+\def\bLambda{\boldsymbol \Lambda}
+\def\beps{\boldsymbol \epsilon}
+\def\T{\text{T}}
+\def\E{\mathrm{E}}
+\def\var{\mathrm{Var}}
+\def\cov{\mathrm{Cov}}
+\def\cor{\mathrm{Corr}}
+\def\se{\mathrm{se}}
+\def\bias{\mathrm{bias}}
+\def\mse{\mathrm{MSE}}
+\def\R{\mathbb{R}}
+\def\P{\mathrm{P}}
+\def\iid{\stackrel{\text{iid}}{\sim}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+```{r}
+#| label: setup
+#| include: false
+#| eval: true
+library(knitr)
+library(ggplot2)
+knitr::opts_chunk$set(
+    fig.asp = 0.618,
+    fig.align = "center",
+    out.width = "100%",
+    fig.retina = 3,
+    fig.path = "./images/02-prob-stat/",
+    message = FALSE,
+    warning = FALSE,
+    global.par = TRUE
+)
+options(
+  htmltools.dir.version = FALSE,
+  dplyr.print_min = 6, 
+  dplyr.print_max = 6,
+  tibble.width = 80,
+  width = 80,
+  digits = 4
+  )
+hook_output <- knitr::knit_hooks$get("output")
+knitr::knit_hooks$set(output = function(x, options) {
+  lines <- options$output.lines
+  if (is.null(lines)) {
+    return(hook_output(x, options))  # pass to default hook
+  }
+  x <- unlist(strsplit(x, "\n"))
+  more <- "..."
+  if (length(lines)==1) {        # first n lines
+    if (length(x) > lines) {
+      # truncate the output, but add ....
+      x <- c(head(x, lines), more)
+    }
+  } else {
+    x <- c(more, x[lines], more)
+  }
+  # paste these lines together
+  x <- paste(c(x, ""), collapse = "\n")
+  hook_output(x, options)
+})
+ggplot2::theme_set(ggplot2::theme_bw(base_size = 16))
+```
+
+# Probability and Statistics Review
+
+<h2> Random variables, moments, and conditional expectation </h2>
+<h2> Discrete and continuous families in R </h2>
+<h2> Multivariate normal and limit theorems </h2>
+<h2> Statistics: ecdf, quantiles, bias, MSE, MLE </h2>
+<h2> Bayes' theorem and Markov chains </h2>
+
+::: notes
+- Rizzo Chapter 2. Throughout the semester we will verify every theoretical statement by simulation; this chapter is the first place we start doing that.
+:::
+
+## Random Variables and Moments (Rizzo 2.1)
+
+- cdf $F_X(x) = P(X\le x)$: non-decreasing, right-continuous, $\lim_{x\to-\infty}F = 0$, $\lim_{x\to\infty}F=1$
+- Discrete: pmf $f_X(x) = P(X=x)$; continuous: pdf $f_X(x) = F_X'(x)$
+- $\E[X] = \int x\, dF(x)$, $\var(X) = \E[(X-\mu)^2] = \E[X^2] - \mu^2$
+- $\cov(X,Y) = \E[(X-\mu_X)(Y-\mu_Y)]$, $\rho(X,Y) = \dfrac{\cov(X,Y)}{\sigma_X\sigma_Y}$
+
+::: alert
+Uncorrelated does **not** imply independent, except when $(X, Y)$ is jointly normal.
+:::
+
+- For iid $X_1,\dots,X_n$: $\E[\bar X] = \mu$, $\var(\bar X) = \sigma^2/n$.
+
+## Conditional Expectation Rule and Conditional Variance Formula
+
+$$
+\E[X] = \E\big[\E[X\mid Y]\big] \qquad (2.1)
+$$
+$$
+\var(X) = \E\big[\var(X\mid Y)\big] + \var\big(\E[X\mid Y]\big) \qquad (2.2)
+$$
+
+**Example (Poisson-Gamma mixture).** $X\mid \Lambda \sim\text{Poisson}(\Lambda)$, $\Lambda\sim\text{Gamma}(r, \beta)$.
+
+- (2.1): $\E[X] = \E[\Lambda] = r/\beta$
+- (2.2): $\var(X) = \E[\Lambda] + \var(\Lambda) = r/\beta + r/\beta^2$
+
+. . .
+
+```{r}
+set.seed(4750)
+r <- 4; beta <- 2; n <- 1e5
+lambda <- rgamma(n, shape = r, rate = beta)
+x <- rpois(n, lambda)
+rbind(simulation = c(mean = mean(x), var = var(x)),
+      formulas   = c(r / beta, r / beta + r / beta^2))
+```
+
+::: notes
+- This mixture is the negative binomial distribution: X ~ NegBin(r, p = beta/(1+beta)). Check with dnbinom.
+- HW 1 asks you to do exactly this for two other hierarchical models.
+:::
+
+## The Mixture Is Negative Binomial
+
+```{r}
+#| fig-asp: 0.4
+k <- 0:12
+obs <- as.numeric(table(factor(x, levels = k))) / n
+barplot(rbind(obs, dnbinom(k, size = r, prob = beta / (1 + beta))), beside = TRUE,
+        names.arg = k, col = c("#FFCC00", "#003366"), legend.text = c("simulated", "NegBin(4, 2/3)"),
+        main = "Poisson-Gamma mixture")
+```
+
+## Some Discrete Distributions (Rizzo 2.2)
+
+:::: {.columns}
+::: {.column width="50%"}
+- **Binomial** $X\sim\text{Bin}(n,p)$: number of successes in $n$ Bernoulli trials; $np$, $np(1-p)$
+- **Multinomial**: counts in $k$ categories
+- **Geometric**: $P(X = x) = p q^x$, $x=0,1,\dots$ (failures before first success); cdf $1-q^{x+1}$ (Example 2.1)
+- **Negative binomial** $(r,p)$: failures before $r$th success; $\binom{x+r-1}{r-1}p^rq^x$  (2.6)
+- **Poisson$(\lambda)$**: $e^{-\lambda}\lambda^x/x!$; mean = variance = $\lambda$ (Example 2.2)
+:::
+::: {.column width="50%"}
+```{r}
+#| fig-asp: 0.9
+par(mfrow = c(2, 2), mar = c(4, 4, 2, 1))
+k <- 0:15
+plot(k, dbinom(k, 15, .4), type = "h", lwd = 5, main = "Bin(15, .4)", ylab = "")
+plot(k, dgeom(k, .25), type = "h", lwd = 5, main = "Geom(.25)", ylab = "")
+plot(k, dnbinom(k, 3, .4), type = "h", lwd = 5, main = "NegBin(3, .4)", ylab = "")
+plot(k, dpois(k, 4), type = "h", lwd = 5, main = "Poisson(4)", ylab = "")
+```
+:::
+::::
+
+## Some Continuous Distributions (Rizzo 2.3)
+
+- **Normal** $N(\mu,\sigma^2)$: $Z = (X-\mu)/\sigma\sim N(0,1)$
+- **Gamma$(r,\lambda)$**: $f(x) = \frac{\lambda^r}{\Gamma(r)} x^{r-1}e^{-\lambda x}$; Exponential = Gamma$(1,\lambda)$; $\chi^2(\nu)$ = Gamma$(\nu/2, 1/2)$
+- **Beta$(\alpha,\beta)$** on $(0,1)$; Uniform(0,1) = Beta(1,1)
+- **Lognormal**: $\log X\sim N(\mu,\sigma^2)$
+- **Student $t(\nu)$** $= Z/\sqrt{V/\nu}$, **$F(\nu_1,\nu_2)$** $= (U/\nu_1)/(V/\nu_2)$
+
+```{r}
+set.seed(4750); z <- rnorm(1e5); v <- rchisq(1e5, df = 5)
+tt <- z / sqrt(v / 5)
+rbind(quantile(tt, c(.9, .95, .99)), qt(c(.9, .95, .99), df = 5))
+```
+
+## Memoryless Exponential (Examples 2.3 - 2.4)
+
+$$
+P(X > s + t \mid X > s) = \frac{e^{-\lambda(s+t)}}{e^{-\lambda s}} = e^{-\lambda t} = P(X>t).
+$$
+
+```{r}
+set.seed(2027); x <- rexp(1e6, rate = 0.5); s <- 2; t <- 3
+c(conditional = mean(x[x > s] > s + t), unconditional = mean(x > t), exact = exp(-0.5 * t))
+```
+
+- **Two-parameter exponential** with location $\eta$: $F(x) = 1 - e^{-\lambda(x-\eta)}$, $x\ge\eta$ (shift a standard exponential).
+
+## Multivariate Normal (Rizzo 2.4)
+
+$$
+f(\bx) = \frac{1}{(2\pi)^{d/2}|\bSigma|^{1/2}}\exp\left\{-\tfrac12(\bx-\bmu)^\T\bSigma^{-1}(\bx-\bmu)\right\}
+$$
+
+- Marginals and conditionals of a MVN are normal; linear transformations $\mathbf{A}\bX+\mathbf{b}\sim N(\mathbf{A}\bmu+\mathbf{b}, \mathbf{A}\bSigma\mathbf{A}^\T)$
+- If $\bZ\sim N_d(\mathbf 0, \bI)$ and $\bSigma = \mathbf{C}\mathbf{C}^\T$, then $\bX = \bmu + \mathbf{C}\bZ \sim N_d(\bmu,\bSigma)$ (**Ch 3!**)
+
+```{r}
+#| fig-asp: 0.4
+Sigma <- matrix(c(1, .8, .8, 1), 2); C <- t(chol(Sigma))
+set.seed(4750); Z <- matrix(rnorm(2 * 2000), nrow = 2)
+X <- t(c(1, 2) + C %*% Z)
+round(cov(X), 2)
+plot(X, pch = 20, col = adjustcolor("#003366", .4), asp = 1, xlab = "x1", ylab = "x2")
+```
+
+## Limit Theorems (Rizzo 2.5)
+
+- **WLLN:** $\bar X_n \xrightarrow{P}\mu$; **SLLN:** $\bar X_n \xrightarrow{a.s.}\mu$
+- **CLT:** $\dfrac{\bar X_n-\mu}{\sigma/\sqrt n}\xrightarrow{D} N(0,1)$ when $\sigma^2<\infty$
+
+```{r}
+#| fig-asp: 0.35
+set.seed(4750)
+par(mfrow = c(1, 4))
+for (n in c(1, 5, 30, 100)) {
+  xbar <- colMeans(matrix(rexp(n * 5000), nrow = n))
+  hist((xbar - 1) / (1 / sqrt(n)), prob = TRUE, breaks = 40, main = paste("n =", n),
+       xlab = "", col = "#FFCC00", xlim = c(-4, 4))
+  curve(dnorm(x), add = TRUE, lwd = 2, col = "#003366")
+}
+```
+
+::: question
+Repeat with Cauchy data. What breaks, and why?
+:::
+
+## Statistics (Rizzo 2.6): ecdf and Quantiles
+
+- **ecdf** $F_n(x) = \frac1n\#\{i: x_i\le x\}$
+- $q$-quantile: $X_q = \inf\{x: F(x)\ge q\}$; R's default `quantile(type = 7)` assigns $(k-1)/(n-1)$ to $x_{(k)}$
+
+```{r}
+#| fig-asp: 0.38
+set.seed(4750); x <- rnorm(25)
+plot(ecdf(x), main = "ecdf of 25 N(0,1) draws vs true cdf", col = "#003366", lwd = 2)
+curve(pnorm(x), add = TRUE, col = "red", lwd = 2)
+quantile(x, c(.25, .5, .75)); quantile(x, .5, type = 1)
+```
+
+## Bias, Standard Error, and MSE
+
+- $\bias(\hat\theta) = \E[\hat\theta] - \theta$; unbiased if bias $=0$
+- $\se(\hat\theta) = \sqrt{\var(\hat\theta)}$
+- $\mse(\hat\theta) = \E[(\hat\theta-\theta)^2] = \var(\hat\theta) + \bias^2(\hat\theta)$
+
+**Example.** For $N(\mu,\sigma^2)$, compare $S^2$ (divisor $n-1$) with $\hat\sigma^2$ (divisor $n$):
+
+```{r}
+set.seed(4750); n <- 10; sigma2 <- 4
+sims <- replicate(1e5, { x <- rnorm(n, sd = 2); c(S2 = var(x), mle = var(x) * (n - 1) / n) })
+rbind(bias = rowMeans(sims) - sigma2, MSE = rowMeans((sims - sigma2)^2))
+```
+
+::: tip
+The biased estimator has the **smaller MSE**: the bias-variance trade-off we will see again in ridge regression and Bayes estimators.
+:::
+
+## Maximum Likelihood (Examples 2.5 - 2.6)
+
+- $L(\theta) = \prod_{i=1}^n f(x_i\mid\theta)$, $\hat\theta = \argmax_\theta \log L(\theta)$
+- **Example 2.5:** for $N(\mu,\sigma^2)$, $\hat\mu = \bar x$, $\hat\sigma^2 = \frac1n\sum(x_i-\bar x)^2$
+- **Invariance (Example 2.6):** if $\hat\theta$ is the MLE of $\theta$, then $g(\hat\theta)$ is the MLE of $g(\theta)$ (e.g. $\hat\sigma = \sqrt{\hat\sigma^2}$)
+
+```{r}
+set.seed(4750); x <- rnorm(50, mean = 5, sd = 2)
+negll <- function(par) -sum(dnorm(x, par[1], exp(par[2]), log = TRUE))
+fit <- optim(c(0, 0), negll)
+c(mu_hat = fit$par[1], sigma_hat = exp(fit$par[2]),
+  closed_form_mu = mean(x), closed_form_sigma = sqrt(mean((x - mean(x))^2)))
+```
+
+::: notes
+- We parametrize log(sigma) so the optimizer is unconstrained. More on optim in Chapter 14, and on MOM/MLE/Bayes in deck 05.
+:::
+
+## Bayes' Theorem and Bayesian Statistics (Rizzo 2.7)
+
+$$
+\pi(\theta\mid x) = \frac{f(x\mid\theta)\pi(\theta)}{\int f(x\mid\theta)\pi(\theta)\,d\theta} \;\propto\; \text{likelihood}\times\text{prior}
+$$
+
+**Beta-Binomial:** $X\mid p\sim\text{Bin}(n,p)$, $p\sim\text{Beta}(a,b)$ $\Rightarrow$ $p\mid x\sim\text{Beta}(a+x,\, b+n-x)$.
+
+```{r}
+#| fig-asp: 0.35
+a <- 2; b <- 2; n <- 20; xobs <- 14
+curve(dbeta(x, a, b), 0, 1, lwd = 3, lty = 2, ylim = c(0, 4.5), ylab = "density", xlab = "p")
+curve(dbeta(x, a + xobs, b + n - xobs), add = TRUE, lwd = 3, col = "#003366")
+abline(v = xobs / n, col = "red", lwd = 2)
+legend("topleft", c("prior Beta(2,2)", "posterior Beta(16,8)", "MLE 14/20"), lty = c(2, 1, 1),
+       col = c(1, "#003366", "red"), lwd = 3, bty = "n")
+```
+
+## Markov Chains (Rizzo 2.8)
+
+- $\{X_t\}$ with $P(X_{t+1}=j\mid X_t = i, X_{t-1},\dots) = p_{ij}$; transition matrix $\mathbf P = (p_{ij})$, rows sum to 1
+- $n$-step transitions: $\mathbf P^n$; stationary distribution $\boldsymbol\pi^\T = \boldsymbol\pi^\T\mathbf P$
+
+**Example 2.7 (DNA mutation).** $p_{ii} = 1-3\alpha$, $p_{ij} = \alpha$, $\alpha = 0.1$.
+
+```{r}
+alpha <- 0.1
+P <- matrix(alpha, 4, 4); diag(P) <- 1 - 3 * alpha
+matpow <- function(M, k) Reduce(`%*%`, replicate(k, M, simplify = FALSE))
+round(matpow(P, 2), 4); round(matpow(P, 16), 4)
+```
+
+## Example 2.8: Random Walk
+
+$X_{t+1} = X_t + \epsilon_t$, $\epsilon_t = \pm 1$ with probability $1/2$ each.
+
+```{r}
+#| fig-asp: 0.35
+set.seed(4750)
+walks <- replicate(5, cumsum(sample(c(-1, 1), 1000, replace = TRUE)))
+matplot(walks, type = "l", lty = 1, lwd = 2, xlab = "t", ylab = expression(X[t]),
+        main = "Five symmetric random walks")
+abline(h = 0, lty = 2)
+```
+
+::: notes
+- Markov chains return in MCMC. Random walks return in Chapter 4 (random processes, Brownian motion).
+:::
+
+## Summary
+
+::: instructions
+- Conditional expectation / variance formulas: verify hierarchical models by simulation.
+- The `d/p/q/r` functions and the relationships between families.
+- MVN via Cholesky: our first *generator* recipe (Ch 3).
+- LLN and CLT explain why Monte Carlo works (Ch 6-7).
+- Bias / SE / MSE are the yardsticks for every estimator this semester.
+:::
+
+::: your-turn
+**HW 1, Extra Question:** For $X\sim\chi^2(\nu = N+1)$ with $N\sim\text{Poisson}(\lambda)$, find $\E[X]$ and $\var(X)$ using (2.1)-(2.2) *and* by simulation.
+:::

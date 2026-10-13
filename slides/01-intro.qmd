@@ -1,0 +1,496 @@
+---
+title: "Introduction to Statistical Computing 💻"
+subtitle: "MATH 4750 / MSSC 5750 Computational Statistics"
+format: 
+  revealjs:
+    code-line-numbers: false
+    html-math-method:
+      method: mathjax
+      url: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    highlight-style: arrow
+    code-block-bg: true
+    self-contained: false
+    slide-number: c/t    
+    incremental: false
+    width: 1800
+    height: 1000
+    margin: 0.05
+    logo: "logo.png"
+    footer: "[mmadoliat.github.io/compstat-s27](https://mmadoliat.github.io/compstat-s27/)"
+    theme: ["simple", "slides.scss"]
+    multiplex: false
+    code-link: true
+    fig-cap-location: bottom
+    fig-align: center
+    transition: none ## fade slide convex concave zoom
+    title-slide-attributes:
+      data-background-image: mu-bg.png
+      data-background-size: stretch
+      data-slide-number: none
+editor: source
+execute:
+  freeze: auto
+  echo: true
+  purl: true
+---
+
+#  {visibility="hidden"}
+
+\def\bx{\mathbf{x}}
+\def\by{\mathbf{y}}
+\def\bz{\mathbf{z}}
+\def\bu{\mathbf{u}}
+\def\bv{\mathbf{v}}
+\def\bw{\mathbf{w}}
+\def\bX{\mathbf{X}}
+\def\bY{\mathbf{Y}}
+\def\bZ{\mathbf{Z}}
+\def\bU{\mathbf{U}}
+\def\bV{\mathbf{V}}
+\def\bW{\mathbf{W}}
+\def\bI{\mathbf{I}}
+\def\bH{\mathbf{H}}
+\def\bS{\mathbf{S}}
+\def\bD{\mathbf{D}}
+\def\bbeta{\boldsymbol \beta}
+\def\btheta{\boldsymbol \theta}
+\def\bmu{\boldsymbol \mu}
+\def\bSigma{\boldsymbol \Sigma}
+\def\bLambda{\boldsymbol \Lambda}
+\def\beps{\boldsymbol \epsilon}
+\def\T{\text{T}}
+\def\E{\mathrm{E}}
+\def\var{\mathrm{Var}}
+\def\cov{\mathrm{Cov}}
+\def\cor{\mathrm{Corr}}
+\def\se{\mathrm{se}}
+\def\bias{\mathrm{bias}}
+\def\mse{\mathrm{MSE}}
+\def\R{\mathbb{R}}
+\def\P{\mathrm{P}}
+\def\iid{\stackrel{\text{iid}}{\sim}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+```{r}
+#| label: setup
+#| include: false
+#| eval: true
+library(knitr)
+library(ggplot2)
+library(patchwork)
+knitr::opts_chunk$set(
+    fig.asp = 0.618,
+    fig.align = "center",
+    out.width = "100%",
+    fig.retina = 3,
+    fig.path = "./images/01-intro/",
+    message = FALSE,
+    warning = FALSE,
+    global.par = TRUE
+)
+options(
+  htmltools.dir.version = FALSE,
+  dplyr.print_min = 6, 
+  dplyr.print_max = 6,
+  tibble.width = 80,
+  width = 80,
+  digits = 4
+  )
+hook_output <- knitr::knit_hooks$get("output")
+knitr::knit_hooks$set(output = function(x, options) {
+  lines <- options$output.lines
+  if (is.null(lines)) {
+    return(hook_output(x, options))  # pass to default hook
+  }
+  x <- unlist(strsplit(x, "\n"))
+  more <- "..."
+  if (length(lines)==1) {        # first n lines
+    if (length(x) > lines) {
+      # truncate the output, but add ....
+      x <- c(head(x, lines), more)
+    }
+  } else {
+    x <- c(more, x[lines], more)
+  }
+  # paste these lines together
+  x <- paste(c(x, ""), collapse = "\n")
+  hook_output(x, options)
+})
+ggplot2::theme_set(ggplot2::theme_bw(base_size = 16))
+```
+
+# Introduction to Statistical Computing
+
+<h2> What is computational statistics? </h2>
+<h2> The R environment and reproducible workflow </h2>
+<h2> R objects: vectors, matrices, arrays, lists, data frames </h2>
+<h2> Functions, control flow, and vectorization </h2>
+<h2> Graphics and importing data </h2>
+
+::: notes
+- Rizzo, Chapter 1. The goal today is to get everybody on the same page with R so that the rest of the semester we can focus on statistical ideas.
+- Each slide that has code is live R code; open the .qmd and run it chunk by chunk.
+:::
+
+## Computational Statistics vs. Statistical Computing
+
+:::: {.columns}
+::: {.column width="50%"}
+**Statistical computing**
+
+- Numerical methods *inside* statistical software
+- Floating-point arithmetic, linear algebra, optimization, root finding, numerical integration
+- How `lm()`, `optim()`, `integrate()` actually work
+:::
+
+::: {.column width="50%"}
+**Computational statistics**
+
+- Statistical methods that are *made possible* by computing
+- Simulation, Monte Carlo, bootstrap, jackknife, permutation tests, MCMC, density estimation, clustering, EM
+- Replace hard math with many cheap computations
+:::
+::::
+
+::: question
+Why can't we just derive a formula? What happens when the sampling distribution of $\hat\theta$ is unknown, the sample is small, or the model has no closed-form likelihood?
+:::
+
+## Course Roadmap
+
+```{r}
+#| echo: false
+roadmap <- data.frame(
+  Block = c("Foundations", "Simulation", "Learning", "Software", "Inference", "Numerics", "Deep learning"),
+  Topics = c("R, probability review, regression, ridge/lasso, MOM/MLE/Bayes",
+             "Generating random variables, Monte Carlo integration, variance reduction",
+             "K-means and hierarchical clustering, multivariate visualization",
+             "Shiny apps, object-oriented programming, R packages",
+             "Monte Carlo inference, bootstrap, jackknife, jackknife-after-bootstrap",
+             "Density estimation, numerical methods, optimization, EM, efficient programming",
+             "Fully connected and convolutional networks in R"),
+  Book = c("Ch 1-2", "Ch 3, 6", "Ch 5", "--", "Ch 7-9", "Ch 12-15", "--")
+)
+knitr::kable(roadmap)
+```
+
+**Textbook:** M. L. Rizzo, *Statistical Computing with R*, 2nd ed., Chapman & Hall/CRC, 2019.
+
+## Why R?
+
+- Free, open source, runs everywhere (Windows, macOS, Linux)
+- Designed by statisticians for data analysis: vectors, data frames, formulas, models
+- 20,000+ packages on CRAN (and Bioconductor, GitHub)
+- Excellent graphics: base, `lattice`, `ggplot2`
+- Reproducible documents: R Markdown / **Quarto** (these slides!)
+- Interfaces to C/C++ (`Rcpp`), Python (`reticulate`), databases, the web
+
+::: alert
+In this course: **R first**, with Python supplements when they illuminate a point. Everything you see on a slide is code you can run.
+:::
+
+## The Working Environment
+
+:::: {.columns}
+::: {.column width="55%"}
+- **IDE:** RStudio or Positron
+- **Projects:** one folder per assignment (`.Rproj`)
+- **Quarto documents** (`.qmd`) mix text, math, and code
+- **Packages:** `install.packages("boot")` once; `library(boot)` every session
+- **Help:** `?mean`, `help.search("bootstrap")`, `example(sample)`, vignettes
+:::
+
+::: {.column width="45%"}
+::: instructions
+**Reproducibility checklist**
+
+- Never rely on objects in your global environment
+- Set a seed: `set.seed(4750)`
+- Keep data files in the project folder; use relative paths
+- Render the whole document before you submit
+- Report `sessionInfo()` when asking for help
+:::
+:::
+::::
+
+## R as a Calculator
+
+```{r}
+2 + 3 * 4
+exp(1); log(100, base = 10); sqrt(2)^2 == 2
+isTRUE(all.equal(sqrt(2)^2, 2))  # floating point! (Ch 13)
+choose(10, 3); factorial(5); gamma(5)
+x <- c(3, 1, 4, 1, 5, 9, 2, 6)
+mean(x); var(x); sd(x); median(x)
+```
+
+::: notes
+- Note sqrt(2)^2 == 2 is FALSE. We come back to this in numerical methods (Ch 13). Use all.equal for floating point comparisons.
+:::
+
+## Vectors and Vectorized Operations
+
+- Almost everything in R is a vector; operations are *element-wise* and recycle.
+
+```{r}
+x <- 1:10
+x^2
+sum(x[x %% 2 == 0])          # logical indexing
+seq(0, 1, by = 0.25); rep(c("a", "b"), times = 3)
+y <- c(height = 1.80, weight = 82)   # named vector
+y["weight"]
+```
+
+. . .
+
+::: tip
+Vectorized code is shorter, clearer, and usually much faster than an explicit loop. We will benchmark this in Chapter 15.
+:::
+
+## Probability Functions: d, p, q, r
+
+```{r}
+#| echo: false
+fun <- data.frame(
+  Prefix = c("`d`", "`p`", "`q`", "`r`"),
+  Meaning = c("density / pmf  $f(x)$", "cdf  $F(x)=P(X\\le x)$", "quantile  $F^{-1}(p)$", "random generation"),
+  Example = c("`dnorm(0)`", "`pnorm(1.96)`", "`qnorm(0.975)`", "`rnorm(5)`")
+)
+knitr::kable(fun, escape = FALSE)
+```
+
+```{r}
+dnorm(0); pnorm(1.96); qnorm(0.975)
+set.seed(4750); rnorm(5, mean = 10, sd = 2)
+dbinom(3, size = 10, prob = 0.4); ppois(2, lambda = 3); qexp(0.5, rate = 2)
+```
+
+Suffixes: `norm`, `binom`, `pois`, `exp`, `gamma`, `beta`, `t`, `chisq`, `f`, `unif`, `geom`, `nbinom`, `cauchy`, `weibull`, `lnorm`, ...
+
+## Example 1.1: `sample()` and Simulated Dice
+
+```{r}
+set.seed(1)
+rolls <- sample(1:6, size = 1000, replace = TRUE)
+table(rolls) / 1000
+```
+
+```{r}
+#| fig-asp: 0.35
+barplot(table(rolls) / 1000, col = "#FFCC00", ylim = c(0, 0.25),
+        main = "Relative frequency of 1000 fair die rolls")
+abline(h = 1/6, lty = 2, col = "#003366", lwd = 2)
+```
+
+## Data Frames: Example 1.2 (`iris`)
+
+```{r}
+str(iris)
+head(iris, 4)
+summary(iris$Petal.Length)
+```
+
+## Working with Data Frames
+
+```{r}
+# subset rows and columns
+iris[iris$Species == "virginica" & iris$Sepal.Length > 7.5, c("Sepal.Length", "Petal.Length")]
+# group summaries
+aggregate(Petal.Length ~ Species, data = iris, FUN = mean)
+with(iris, tapply(Sepal.Width, Species, sd))
+```
+
+## Matrices and Arrays: Examples 1.3 - 1.4
+
+```{r}
+A <- matrix(1:6, nrow = 2)       # filled by column
+A
+dim(A); t(A)
+B <- matrix(c(2, 1, 1, 3), 2, 2)
+B %*% A                          # matrix product
+solve(B)                         # inverse
+x <- array(1:24, dim = c(2, 3, 4)); x[2, 3, 4]
+```
+
+## Example 1.5: `iris3` as a 3-d Array
+
+```{r}
+dim(iris3)                         # 50 flowers x 4 measurements x 3 species
+apply(iris3, MARGIN = c(2, 3), FUN = mean)   # means by variable and species
+```
+
+::: question
+How would you compute the same table from the `iris` data frame?
+:::
+
+. . .
+
+```{r}
+t(sapply(split(iris[, 1:4], iris$Species), colMeans))
+```
+
+## Lists: Examples 1.6 - 1.8
+
+```{r}
+set.seed(4750)
+n <- 50; x <- sample(0:1, size = n, replace = TRUE)
+r <- rle(x)                       # run length encoding (a list!)
+str(r)
+max(r$lengths)                    # longest run
+w <- list(name = "Geometric", p = 0.2, values = rgeom(5, 0.2))
+w$values; w[["p"]]; names(w)
+```
+
+## Writing Functions
+
+```{r}
+sumdice <- function(n, sides = 6) {
+  # simulate the sum of two dice n times
+  k <- sample(1:sides, size = n, replace = TRUE) +
+       sample(1:sides, size = n, replace = TRUE)
+  return(k)
+}
+set.seed(2027)
+s <- sumdice(10000)
+round(table(s) / length(s), 3)
+```
+
+::: question
+What is the exact pmf of the sum of two fair dice? Compare with the simulated frequencies.
+:::
+
+## Control Flow and the `apply` Family
+
+:::: {.columns}
+::: {.column width="50%"}
+```{r}
+x <- c(-2, 0, 3)
+for (xi in x) {
+  if (xi < 0) {
+    cat(xi, "is negative\n")
+  } else if (xi == 0) {
+    cat(xi, "is zero\n")
+  } else cat(xi, "is positive\n")
+}
+ifelse(x > 0, "pos", "non-pos")
+```
+:::
+
+::: {.column width="50%"}
+```{r}
+m <- matrix(rnorm(20), 4, 5)
+apply(m, 1, max)          # rows
+sapply(1:5, function(k) k^2)
+vapply(iris[, 1:4], median, numeric(1))
+Map(function(a, b) a + b, 1:3, 4:6) |> unlist()
+```
+:::
+::::
+
+## A First Simulation: Law of Large Numbers
+
+```{r}
+#| fig-asp: 0.4
+set.seed(4750)
+n <- 5000
+x <- rexp(n, rate = 2)           # E(X) = 1/2
+running_mean <- cumsum(x) / seq_len(n)
+plot(running_mean, type = "l", log = "x", lwd = 2, col = "#003366",
+     xlab = "n", ylab = "running mean", main = "LLN: sample mean of Exp(2)")
+abline(h = 0.5, col = "red", lty = 2, lwd = 2)
+```
+
+# Graphics
+
+## Example 1.9: Parallel Boxplots (base R)
+
+```{r}
+#| fig-asp: 0.45
+boxplot(len ~ dose, data = ToothGrowth, col = c("#FFCC00", "#88A0C8", "#F26BAA"),
+        xlab = "Vitamin C dose (mg/day)", ylab = "Tooth length",
+        main = "ToothGrowth: tooth length by dose")
+```
+
+## Examples 1.10 - 1.12: Scatterplots, Colors, Symbols
+
+```{r}
+#| fig-asp: 0.45
+par(mfrow = c(1, 2))
+plot(iris$Petal.Length, iris$Petal.Width, pch = as.integer(iris$Species),
+     col = as.integer(iris$Species) + 1, xlab = "Petal length", ylab = "Petal width")
+legend("topleft", legend = levels(iris$Species), pch = 1:3, col = 2:4, bty = "n")
+pairs(iris[, 1:4], col = as.integer(iris$Species) + 1, pch = 20, cex = 0.6)
+```
+
+## Example 1.13: `ggplot2` Boxplots and Violin Plots
+
+```{r}
+#| fig-asp: 0.4
+library(patchwork)
+p1 <- ggplot(ToothGrowth, aes(factor(dose), len, fill = supp)) + geom_boxplot() +
+  labs(x = "dose", y = "length")
+p2 <- ggplot(ToothGrowth, aes(factor(dose), len)) + geom_violin(fill = "#FFCC00") +
+  geom_jitter(width = 0.1, alpha = 0.5) + labs(x = "dose", y = "length")
+p1 + p2
+```
+
+## Example 1.14: MPG by Engine Displacement
+
+```{r}
+#| fig-asp: 0.45
+ggplot(mpg, aes(displ, hwy, color = class)) +
+  geom_point(size = 2.5, alpha = 0.8) +
+  geom_smooth(aes(group = 1), method = "loess", se = TRUE, color = "black") +
+  labs(x = "Engine displacement (L)", y = "Highway MPG")
+```
+
+## Examples 1.15 - 1.17: Importing and Exporting Data
+
+```{r}
+tmp <- tempfile(fileext = ".csv")
+write.csv(iris[1:5, ], tmp, row.names = FALSE)   # export
+dat <- read.csv(tmp)                               # import
+str(dat)
+```
+
+```{r}
+#| eval: false
+# other common readers
+read.table("data/file.txt", header = TRUE)        # whitespace-delimited
+readr::read_csv("data/file.csv")                  # tidyverse reader
+readxl::read_excel("data/file.xlsx")
+read.table("https://www.example.edu/data.dat")    # straight from the web
+```
+
+::: tip
+Always inspect after importing: `str()`, `head()`, `summary()`, and check for `NA`.
+:::
+
+## Python Supplement: the Same Ideas in `numpy`
+
+```{.python}
+import numpy as np
+rng = np.random.default_rng(4750)
+x = rng.exponential(scale=0.5, size=5000)     # Exp(rate = 2)
+running_mean = np.cumsum(x) / np.arange(1, x.size + 1)
+print(running_mean[[9, 99, 999, 4999]])
+```
+
+- In Quarto, Python chunks run through `reticulate` (conda env `py39` in my setup).
+- Note: R and Python random-number streams differ even with the same seed.
+
+## Summary
+
+::: instructions
+- R is a vectorized language: think in vectors, matrices, and lists.
+- `d/p/q/r` functions give you every standard distribution.
+- Functions + `sample()` + loops/`apply` are enough to simulate almost anything.
+- Graphics: base R for quick looks, `ggplot2` for layered, publication-quality plots.
+- Reproducibility: projects, relative paths, seeds, Quarto.
+:::
+
+::: your-turn
+- Install R, RStudio/Positron, and Quarto. Render this `.qmd`.
+- Work through **HW 0** (Learn R) before next class.
+:::

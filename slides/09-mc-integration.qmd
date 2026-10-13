@@ -1,0 +1,559 @@
+---
+title: "Monte Carlo Integration and Variance Reduction 🎰"
+subtitle: "MATH 4750 / MSSC 5750 Computational Statistics"
+format: 
+  revealjs:
+    code-line-numbers: false
+    html-math-method:
+      method: mathjax
+      url: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    highlight-style: arrow
+    code-block-bg: true
+    self-contained: false
+    slide-number: c/t    
+    incremental: false
+    width: 1800
+    height: 1000
+    margin: 0.05
+    logo: "logo.png"
+    footer: "[mmadoliat.github.io/compstat-s27](https://mmadoliat.github.io/compstat-s27/)"
+    theme: ["simple", "slides.scss"]
+    multiplex: false
+    code-link: true
+    fig-cap-location: bottom
+    fig-align: center
+    transition: none ## fade slide convex concave zoom
+    title-slide-attributes:
+      data-background-image: mu-bg.png
+      data-background-size: stretch
+      data-slide-number: none
+editor: source
+execute:
+  freeze: auto
+  echo: true
+  purl: true
+---
+
+#  {visibility="hidden"}
+
+\def\bx{\mathbf{x}}
+\def\by{\mathbf{y}}
+\def\bz{\mathbf{z}}
+\def\bu{\mathbf{u}}
+\def\bv{\mathbf{v}}
+\def\bw{\mathbf{w}}
+\def\bX{\mathbf{X}}
+\def\bY{\mathbf{Y}}
+\def\bZ{\mathbf{Z}}
+\def\bU{\mathbf{U}}
+\def\bV{\mathbf{V}}
+\def\bW{\mathbf{W}}
+\def\bI{\mathbf{I}}
+\def\bH{\mathbf{H}}
+\def\bS{\mathbf{S}}
+\def\bD{\mathbf{D}}
+\def\bbeta{\boldsymbol \beta}
+\def\btheta{\boldsymbol \theta}
+\def\bmu{\boldsymbol \mu}
+\def\bSigma{\boldsymbol \Sigma}
+\def\bLambda{\boldsymbol \Lambda}
+\def\beps{\boldsymbol \epsilon}
+\def\T{\text{T}}
+\def\E{\mathrm{E}}
+\def\var{\mathrm{Var}}
+\def\cov{\mathrm{Cov}}
+\def\cor{\mathrm{Corr}}
+\def\se{\mathrm{se}}
+\def\bias{\mathrm{bias}}
+\def\mse{\mathrm{MSE}}
+\def\R{\mathbb{R}}
+\def\P{\mathrm{P}}
+\def\iid{\stackrel{\text{iid}}{\sim}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+```{r}
+#| label: setup
+#| include: false
+#| eval: true
+library(knitr)
+library(ggplot2)
+knitr::opts_chunk$set(
+    fig.asp = 0.618,
+    fig.align = "center",
+    out.width = "100%",
+    fig.retina = 3,
+    fig.path = "./images/09-mc-integration/",
+    message = FALSE,
+    warning = FALSE,
+    global.par = TRUE
+)
+options(
+  htmltools.dir.version = FALSE,
+  dplyr.print_min = 6, 
+  dplyr.print_max = 6,
+  tibble.width = 80,
+  width = 80,
+  digits = 4
+  )
+hook_output <- knitr::knit_hooks$get("output")
+knitr::knit_hooks$set(output = function(x, options) {
+  lines <- options$output.lines
+  if (is.null(lines)) {
+    return(hook_output(x, options))  # pass to default hook
+  }
+  x <- unlist(strsplit(x, "\n"))
+  more <- "..."
+  if (length(lines)==1) {        # first n lines
+    if (length(x) > lines) {
+      # truncate the output, but add ....
+      x <- c(head(x, lines), more)
+    }
+  } else {
+    x <- c(more, x[lines], more)
+  }
+  # paste these lines together
+  x <- paste(c(x, ""), collapse = "\n")
+  hook_output(x, options)
+})
+ggplot2::theme_set(ggplot2::theme_bw(base_size = 16))
+```
+
+# Monte Carlo Integration and Variance Reduction
+
+<h2> Lecture A: simple Monte Carlo integration, unbounded intervals, standard errors </h2>
+<h2> Lecture B: variance reduction, antithetic variables, control variates </h2>
+<h2> Lecture C: importance sampling, stratified sampling, stratified importance sampling </h2>
+
+::: notes
+- Rizzo Chapter 6. The LLN makes Monte Carlo integration work; the CLT tells us how accurate it is. Variance reduction makes it cheaper.
+:::
+
+# Lecture A: Monte Carlo Integration {#part-a}
+
+## Monte Carlo Integration: The Idea
+
+- Write an integral as an **expected value**, then estimate the expected value by a **sample mean**.
+- If $X\sim f$, then $\theta = \E[g(X)] = \int g(x)f(x)\,dx$ is estimated by
+
+$$
+\hat\theta = \overline{g(X)} = \frac1m\sum_{i=1}^m g(X_i),\qquad X_1,\dots,X_m\iid f.
+$$
+
+- By the SLLN $\hat\theta\to\theta$ with probability 1; by the CLT $\hat\theta$ is approximately normal with variance $\var(g(X))/m$.
+
+## Simple Monte Carlo Estimator on $(0,1)$
+
+$$
+\theta = \int_0^1 g(x)\,dx = \E[g(X)],\quad X\sim\text{Uniform}(0,1).
+$$
+
+::: algo
+1. Generate $X_1,\dots,X_m$ from Uniform(0,1).
+2. Compute $\overline{g(X)} = \frac1m\sum g(X_i)$.
+:::
+
+**Example 6.1.** Estimate $\theta = \int_0^1 e^{-x}\,dx = 1 - e^{-1}$.
+
+```{r}
+set.seed(4750)
+m <- 10000
+x <- runif(m)
+theta.hat <- mean(exp(-x))
+c(estimate = theta.hat, exact = 1 - exp(-1))
+```
+
+## Example 6.2: General Interval $(a, b)$
+
+$$
+\theta = \int_a^b g(t)\,dt = (b-a)\int_a^b g(t)\frac{1}{b-a}\,dt = (b-a)\,\E[g(Y)],\quad Y\sim\text{Uniform}(a,b).
+$$
+
+Estimate $\theta = \int_2^4 e^{-x}\,dx = e^{-2}-e^{-4}$:
+
+```{r}
+set.seed(4750); m <- 10000
+x <- runif(m, min = 2, max = 4)
+theta.hat <- mean(exp(-x)) * 2
+c(estimate = theta.hat, exact = exp(-2) - exp(-4))
+```
+
+::: question
+Equivalently, substitute $y = (t-a)/(b-a)$ and integrate over $(0,1)$. Show the two estimators are identical in distribution.
+:::
+
+## Example 6.3: Unbounded Interval, $\Phi(x)$
+
+Estimate the standard normal cdf $\Phi(x) = \int_{-\infty}^x \frac1{\sqrt{2\pi}}e^{-t^2/2}\,dt$.
+
+- For $x>0$: $\Phi(x) = 0.5 + \int_0^x\frac1{\sqrt{2\pi}}e^{-t^2/2}dt$, and with $y = t/x$, $\displaystyle\theta = \int_0^1 x e^{-(xy)^2/2}dy = \E_Y\big[xe^{-(xY)^2/2}\big]$, $Y\sim U(0,1)$.
+
+```{r}
+x <- seq(.1, 2.5, length = 10)
+m <- 10000; set.seed(4750); u <- runif(m)
+cdf <- numeric(length(x))
+for (i in 1:length(x)) {
+  g <- x[i] * exp(-(u * x[i])^2 / 2)
+  cdf[i] <- mean(g) / sqrt(2 * pi) + 0.5
+}
+Phi <- pnorm(x)
+print(round(rbind(x, cdf, Phi), 3))
+```
+
+## Example 6.4: Using the Indicator Function
+
+$\Phi(x) = \E[I(Z\le x)]$, $Z\sim N(0,1)$: just count!
+
+```{r}
+set.seed(4750)
+z <- rnorm(m)
+dim(x) <- length(x)
+p <- apply(x, MARGIN = 1, FUN = function(x, z) { mean(z < x) }, z = z)
+print(round(rbind(x, p, Phi), 3))
+```
+
+- Advantage: no change of variables, works for any $x$. Disadvantage: larger variance in the tails (see next slides).
+
+## Standard Error of $\hat\theta$
+
+$$
+\var(\hat\theta) = \frac{\sigma^2}{m},\qquad \sigma^2 = \var(g(X)),\qquad \widehat{\se}(\hat\theta) = \frac1m\Big\{\sum_{i=1}^m(g(x_i) - \overline{g(x)})^2\Big\}^{1/2}.
+$$
+
+By the CLT, $\dfrac{\hat\theta - \E\hat\theta}{\sqrt{\var\hat\theta}}\approx N(0,1)$, so $\hat\theta\pm z_{\alpha/2}\,\widehat{\se}(\hat\theta)$ is an approximate CI.
+
+**Example 6.5 (error bounds).** Estimate $\Phi(2)$ and its variance with the indicator estimator:
+
+```{r}
+x <- 2; m <- 10000; set.seed(4750)
+z <- rnorm(m)
+g <- (z < x)                         # the indicator function
+v <- mean((g - mean(g))^2) / m
+cdf <- mean(g)
+c(cdf = cdf, var = v, exact_var = pnorm(2) * (1 - pnorm(2)) / m)
+c(cdf - 1.96 * sqrt(v), cdf + 1.96 * sqrt(v))
+```
+
+## How Many Replicates Do We Need?
+
+For an error bound $\epsilon$ with confidence $1-\alpha$: $m\ge\left(z_{\alpha/2}\,\sigma/\epsilon\right)^2$.
+
+```{r}
+#| fig-asp: 0.38
+set.seed(4750)
+g <- function(u) exp(-u)
+ms <- round(10^seq(1, 5, length = 30))
+reps <- sapply(ms, function(m) replicate(200, mean(g(runif(m)))))
+plot(ms, apply(reps, 2, sd), log = "xy", pch = 19, col = "#003366", xlab = "m", ylab = "sd of estimate",
+     main = "Monte Carlo error decreases like 1/sqrt(m)")
+lines(ms, sqrt(var(g(runif(1e6))) / ms), col = "red", lwd = 2)
+```
+
+::: alert
+To gain **one more decimal digit** of accuracy we need **100 times** more replicates. That is why variance reduction matters.
+:::
+
+## Monte Carlo in Higher Dimensions
+
+The $1/\sqrt m$ rate does **not** depend on the dimension, unlike grid quadrature.
+
+```{r}
+# volume of the unit ball in d dimensions = P(||U|| <= 1) * 2^d, U ~ Uniform(-1,1)^d
+set.seed(4750); m <- 1e5
+ball <- function(d) { U <- matrix(runif(m * d, -1, 1), m); est <- mean(rowSums(U^2) <= 1) * 2^d
+  c(d = d, MC = est, exact = pi^(d / 2) / gamma(d / 2 + 1)) }
+t(sapply(c(2, 3, 5, 8), ball))
+```
+
+::: question
+Why does the estimate for $d = 8$ get noisier, even though the rate is $1/\sqrt m$? (Hint: what happens to $\sigma/\theta$?)
+:::
+
+# Lecture B: Variance Reduction {#part-b}
+
+## Efficiency
+
+- If $\hat\theta_1$ and $\hat\theta_2$ estimate $\theta$ and $\var(\hat\theta_2) < \var(\hat\theta_1)$, the **percent reduction in variance** is
+$$
+100\left(\frac{\var(\hat\theta_1) - \var(\hat\theta_2)}{\var(\hat\theta_1)}\right).
+$$
+- Replicates are cheap, but **not free**: compare methods by variance per unit of computing time.
+- Methods: antithetic variables, control variates, importance sampling, stratified sampling, ...
+
+## Antithetic Variables
+
+For identically distributed $U_1, U_2$:
+$$
+\var\left(\frac{U_1+U_2}{2}\right) = \frac14\big(\var U_1 + \var U_2 + 2\cov(U_1,U_2)\big),
+$$
+which is **smaller** when $\cov(U_1,U_2) < 0$.
+
+- If $g$ is monotone, then $g(U)$ and $g(1-U)$ are **negatively correlated** (Corollary 6.1).
+- Use $m/2$ uniforms $u_j$ and their antithetic partners $1-u_j$:
+
+$$
+\hat\theta = \frac1m\sum_{j=1}^{m/2}\big(g(u_j) + g(1-u_j)\big).
+$$
+
+## Example 6.6: Antithetic Estimator of $\Phi(x)$
+
+```{r}
+MC.Phi <- function(x, R = 10000, antithetic = TRUE) {
+  u <- runif(R / 2)
+  if (!antithetic) v <- runif(R / 2) else v <- 1 - u
+  u <- c(u, v)
+  cdf <- numeric(length(x))
+  for (i in 1:length(x)) {
+    g <- x[i] * exp(-(u * x[i])^2 / 2)
+    cdf[i] <- mean(g) / sqrt(2 * pi) + 0.5
+  }
+  cdf
+}
+x <- seq(.1, 2.5, length = 5)
+set.seed(123); MC1 <- MC.Phi(x, anti = FALSE)
+set.seed(123); MC2 <- MC.Phi(x)
+print(round(rbind(x, MC1, MC2, Phi = pnorm(x)), 5))
+```
+
+## How Much Variance Did We Save?
+
+```{r}
+m <- 1000; MC1 <- MC2 <- numeric(m); x <- 1.95
+set.seed(4750)
+for (i in 1:m) {
+  MC1[i] <- MC.Phi(x, R = 1000, anti = FALSE)
+  MC2[i] <- MC.Phi(x, R = 1000)
+}
+c(sd_simple = sd(MC1), sd_antithetic = sd(MC2), percent_reduction = 100 * (var(MC1) - var(MC2)) / var(MC1))
+```
+
+::: tip
+The antithetic estimator reduces the variance by about 99.5% at $x = 1.95$ for the **same** number of function evaluations.
+:::
+
+## Control Variates
+
+Suppose $\mu = \E[f(X)]$ is **known** and $f(X)$ is correlated with $g(X)$. For any constant $c$,
+
+$$
+\hat\theta_c = g(X) + c\big(f(X) - \mu\big)
+$$
+
+is unbiased for $\theta$, with variance $\var(g(X)) + c^2\var(f(X)) + 2c\cov(g(X),f(X))$, minimized at
+
+$$
+c^* = -\frac{\cov(g(X),f(X))}{\var(f(X))},\qquad \var(\hat\theta_{c^*}) = \var(g(X))\big(1 - \cor(g(X),f(X))^2\big).
+$$
+
+- $f(X)$ is the **control variate**. The reduction is $100\,\cor(g(X),f(X))^2$ percent.
+
+## Example 6.7: Control Variate for $\int_0^1 e^u\,du$
+
+$g(U) = e^U$, $f(U) = U$ with $\E U = 1/2$, $\var U = 1/12$, $\cov(e^U, U) = 1 - (1/2)(e-1)$, so $c^* = -12 + 6(e-1)\approx -1.69$.
+
+```{r}
+set.seed(4750); m <- 10000
+a <- -12 + 6 * (exp(1) - 1)
+U <- runif(m)
+T1 <- exp(U)                           # simple MC
+T2 <- exp(U) + a * (U - 1/2)           # controlled
+c(simple = mean(T1), controlled = mean(T2), exact = exp(1) - 1)
+c(var_simple = var(T1), var_controlled = var(T2), reduction = 100 * (var(T1) - var(T2)) / var(T1))
+```
+
+## Example 6.8: Estimating $c^*$ by a Pilot Sample
+
+$\theta = \displaystyle\int_0^1\frac{e^{-u}}{1+u^2}\,du$ with control variate $f(u) = \dfrac{e^{-0.5}}{1+u^2}$, $\ \mu = \E f(U) = e^{-0.5}\pi/4$.
+
+```{r}
+f <- function(u) exp(-.5) / (1 + u^2)
+g <- function(u) exp(-u) / (1 + u^2)
+set.seed(510)                                   # needed later
+u <- runif(10000)
+B <- f(u); A <- g(u)
+cor(A, B)
+a <- -cov(A, B) / var(B)                        # est of c*
+a
+m <- 100000; u <- runif(m)
+T1 <- g(u)
+T2 <- T1 + a * (f(u) - exp(-.5) * pi / 4)
+c(mean(T1), mean(T2))
+c(var(T1), var(T2)); 100 * (var(T1) - var(T2)) / var(T1)
+```
+
+## Example 6.9: Control Variates and Regression
+
+Regressing $g(X)$ on $f(X)$: the least squares slope is $\hat\beta_1 = \widehat{\cov}(g,f)/\widehat{\var}(f) = -\hat c^*$, and
+
+$$
+\hat\theta_{\hat c^*} = \hat\beta_0 + \hat\beta_1\mu = \text{the fitted value at } f = \mu.
+$$
+
+```{r}
+set.seed(510)
+u <- runif(10000)
+L <- lm(g(u) ~ f(u))                            # gen(f(u)) on f(u)
+theta.hat <- sum(L$coeff * c(1, exp(-.5) * pi / 4))
+se.hat <- summary(L)$sigma / sqrt(length(u))
+c(theta.hat = theta.hat, residual_se = se.hat, c_star = -L$coeff[2])
+```
+
+## Example 6.10: Several Control Variates
+
+$\hat\theta = g(X) + \sum_k c_k(f_k(X) - \mu_k)$, fitted by **multiple regression**; the estimate is the prediction at $(\mu_1,\dots,\mu_k)$.
+
+```{r}
+set.seed(510)
+u <- runif(10000)
+f1 <- function(u) exp(-.5) / (1 + u^2); f2 <- function(u) exp(-u) / (1 - exp(-1))
+mu <- c(exp(-.5) * pi / 4, 1)                   # E f1(U), E f2(U)
+L2 <- lm(g(u) ~ f1(u) + f2(u))
+c(theta.hat = sum(L2$coeff * c(1, mu)), se = summary(L2)$sigma / sqrt(10000),
+  R2 = summary(L2)$r.squared, exact = integrate(g, 0, 1)$value)
+```
+
+::: notes
+- The residual standard error of the regression divided by sqrt(m) is the se of the control-variate estimator. The R^2 is the proportion of variance removed.
+:::
+
+# Lecture C: Importance Sampling {#part-c}
+
+## Importance Sampling
+
+The simple MC estimator samples **uniformly**, wasting effort where $g$ is small. Instead, sample from an **importance function** $f$ that is large where $|g|$ is large:
+
+$$
+\theta = \int_A g(x)\,dx = \int_A\frac{g(x)}{f(x)}f(x)\,dx = \E_f\left[\frac{g(X)}{f(X)}\right],\qquad \hat\theta = \frac1m\sum_{i=1}^m\frac{g(X_i)}{f(X_i)},\ X_i\sim f.
+$$
+
+- $f$ must be positive on the set where $g\neq 0$ (and supported where we integrate).
+- The variance is $\var\big(g(X)/f(X)\big)/m$: **smallest when $g/f$ is nearly constant**, i.e. $f\approx |g|/\int|g|$.
+
+## Example 6.11: Choice of the Importance Function
+
+$\theta = \displaystyle\int_0^1\frac{e^{-x}}{1+x^2}\,dx$ with candidates
+
+$$
+\begin{aligned}
+f_0(x) &= 1,\ 0<x<1 & f_1(x) &= e^{-x},\ 0<x<\infty & f_2(x) &= \frac{1}{\pi(1+x^2)},\ x\in\R\\
+f_3(x) &= \frac{e^{-x}}{1-e^{-1}},\ 0<x<1 & f_4(x) &= \frac{4}{\pi(1+x^2)},\ 0<x<1
+\end{aligned}
+$$
+
+```{r}
+#| fig-asp: 0.33
+#| echo: false
+xx <- seq(0, 1, .01); gx <- exp(-xx) / (1 + xx^2)
+fs <- list(f0 = rep(1, length(xx)), f1 = exp(-xx), f2 = 1 / (pi * (1 + xx^2)),
+           f3 = exp(-xx) / (1 - exp(-1)), f4 = 4 / ((1 + xx^2) * pi))
+par(mfrow = c(1, 2), mar = c(4, 4, 1, 1))
+plot(xx, gx, type = "l", lwd = 3, ylim = c(0, 2), xlab = "x", ylab = "g(x), f(x)")
+for (k in 1:5) lines(xx, fs[[k]], col = k + 1, lty = k + 1, lwd = 2)
+legend("topright", c("g", names(fs)), col = 1:6, lty = 1:6, lwd = 2, bty = "n", ncol = 2)
+plot(xx, gx, type = "n", ylim = c(0, 3.2), xlab = "x", ylab = "g(x)/f(x)")
+for (k in 1:5) lines(xx, gx / fs[[k]], col = k + 1, lty = k + 1, lwd = 2)
+```
+
+## Comparing the Five Importance Functions
+
+```{r}
+m <- 10000; theta.hat <- se <- numeric(5)
+g <- function(x) exp(-x - log(1 + x^2)) * (x > 0) * (x < 1)
+set.seed(4750)
+x <- runif(m)                              # using f0
+fg <- g(x); theta.hat[1] <- mean(fg); se[1] <- sd(fg)
+x <- rexp(m, 1)                            # using f1
+fg <- g(x) / exp(-x); theta.hat[2] <- mean(fg); se[2] <- sd(fg)
+x <- rcauchy(m)                            # using f2
+i <- c(which(x > 1), which(x < 0)); x[i] <- 2   # to catch overflow errors in g(x)
+fg <- g(x) / dcauchy(x); theta.hat[3] <- mean(fg); se[3] <- sd(fg)
+u <- runif(m)                              # f3, inverse transform method
+x <- -log(1 - u * (1 - exp(-1)))
+fg <- g(x) / (exp(-x) / (1 - exp(-1))); theta.hat[4] <- mean(fg); se[4] <- sd(fg)
+u <- runif(m)                              # f4, inverse transform method
+x <- tan(pi * u / 4)
+fg <- g(x) / (4 / ((1 + x^2) * pi)); theta.hat[5] <- mean(fg); se[5] <- sd(fg)
+rbind(theta.hat, se) |> round(4)
+```
+
+::: notes
+- f3 and (to a lesser extent) f4 give the smallest variance: their ratio g/f is nearly constant. f1 and f2 put mass outside (0,1), producing many zeros.
+- se here is the sd of g/f; divide by sqrt(m) for the standard error of the estimate.
+:::
+
+## Stratified Sampling
+
+Divide the interval into $k$ strata and estimate the integral on each with $m/k$ replicates:
+
+$$
+\hat\theta_S = \frac1k\sum_{j=1}^k\hat\theta_j,\qquad \var(\hat\theta_S) = \frac{1}{k^2}\sum_j\frac{\sigma_j^2}{m/k} = \frac1{mk}\sum_j\sigma_j^2 \le \frac{\sigma^2}{m}.
+$$
+
+- Stratification removes the **between-strata** variability of $g$.
+
+**Example 6.12 (four strata, small $M$).**
+
+```{r}
+M <- 20; T2 <- numeric(4); estimates <- matrix(0, 10, 2)
+set.seed(4750)
+for (i in 1:10) {
+  estimates[i, 1] <- mean(g(runif(M)))
+  T2[1] <- mean(g(runif(M / 4, 0, .25)));  T2[2] <- mean(g(runif(M / 4, .25, .5)))
+  T2[3] <- mean(g(runif(M / 4, .5, .75))); T2[4] <- mean(g(runif(M / 4, .75, 1)))
+  estimates[i, 2] <- mean(T2)
+}
+apply(estimates, 2, mean); apply(estimates, 2, var)
+```
+
+## Example 6.13: Stratified Sampling with $k = 10$ Strata
+
+```{r}
+M <- 10000; k <- 10; r <- M / k; N <- 50
+T2 <- numeric(k); estimates <- matrix(0, N, 2)
+set.seed(4750)
+for (i in 1:N) {
+  estimates[i, 1] <- mean(g(runif(M)))
+  for (j in 1:k) T2[j] <- mean(g(runif(M / k, (j - 1) / k, j / k)))
+  estimates[i, 2] <- mean(T2)
+}
+colnames(estimates) <- c("simple", "stratified")
+apply(estimates, 2, mean); apply(estimates, 2, var)
+```
+
+## Stratified Importance Sampling
+
+1. Choose an importance function $f$ and split the real line into $k$ intervals $I_j = \{x: a_{j-1}\le x < a_j\}$ with $a_0 = -\infty$, $a_j = F^{-1}(j/k)$, $a_k = \infty$ (equal probability $1/k$ under $f$).
+2. On $I_j$ define $g_j(x) = g(x)I(x\in I_j)$ and sample from the conditional density $f_j(x) = k f(x)$, $x\in I_j$.
+3. Estimate $\theta_j = \int_{I_j}g_j$ by importance sampling; $\hat\theta^{SI} = \sum_{j=1}^k\hat\theta_j$.
+
+::: fact
+$\var(\hat\theta^{SI})\le\var(\hat\theta^{I})$: stratification never hurts importance sampling (Rizzo, Proposition 6.3).
+:::
+
+::: your-turn
+**Example 6.14.** Using $f_3(x) = e^{-x}/(1-e^{-1})$ on five subintervals $\big((j-1)/5,\, j/5\big)$, implement stratified importance sampling for $\int_0^1 e^{-x}/(1+x^2)\,dx$ and compare its standard error with the importance sampling result from Example 6.11.
+:::
+
+## Python Supplement: Importance Sampling with `numpy`
+
+```{.python}
+import numpy as np
+rng = np.random.default_rng(4750)
+m = 10_000
+g = lambda x: np.exp(-x) / (1 + x**2)
+u = rng.uniform(size=m)
+x = -np.log(1 - u * (1 - np.exp(-1)))           # draws from f3 by inverse transform
+w = g(x) / (np.exp(-x) / (1 - np.exp(-1)))
+print(w.mean(), w.std(ddof=1) / np.sqrt(m))
+```
+
+## Summary
+
+::: instructions
+- Integral $=$ expectation $\Rightarrow$ estimate by a sample mean; SE $=\sigma/\sqrt m$.
+- **Antithetic variables:** pair $U$ with $1-U$ for monotone $g$.
+- **Control variates:** subtract a correlated quantity with known mean; optimal $c^*$ via regression.
+- **Importance sampling:** sample where $|g|$ is large; aim for $g/f\approx$ constant.
+- **Stratified (importance) sampling:** remove between-strata variability.
+- Always report the Monte Carlo standard error of your estimate.
+:::

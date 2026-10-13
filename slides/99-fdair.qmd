@@ -1,0 +1,425 @@
+---
+title: "A Journey Through Functional Data with R 〰️"
+subtitle: "MATH 4750 / MSSC 5750 Computational Statistics"
+format: 
+  revealjs:
+    code-line-numbers: false
+    html-math-method:
+      method: mathjax
+      url: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    highlight-style: arrow
+    code-block-bg: true
+    self-contained: false
+    slide-number: c/t    
+    incremental: false
+    width: 1800
+    height: 1000
+    margin: 0.05
+    logo: "logo.png"
+    footer: "[mmadoliat.github.io/compstat-s27](https://mmadoliat.github.io/compstat-s27/)"
+    theme: ["simple", "slides.scss"]
+    multiplex: false
+    code-link: true
+    fig-cap-location: bottom
+    fig-align: center
+    transition: none ## fade slide convex concave zoom
+    title-slide-attributes:
+      data-background-image: mu-bg.png
+      data-background-size: stretch
+      data-slide-number: none
+editor: source
+execute:
+  freeze: auto
+  echo: true
+  purl: true
+---
+
+#  {visibility="hidden"}
+
+\def\bx{\mathbf{x}}
+\def\by{\mathbf{y}}
+\def\bz{\mathbf{z}}
+\def\bu{\mathbf{u}}
+\def\bv{\mathbf{v}}
+\def\bw{\mathbf{w}}
+\def\bX{\mathbf{X}}
+\def\bY{\mathbf{Y}}
+\def\bZ{\mathbf{Z}}
+\def\bU{\mathbf{U}}
+\def\bV{\mathbf{V}}
+\def\bW{\mathbf{W}}
+\def\bI{\mathbf{I}}
+\def\bH{\mathbf{H}}
+\def\bS{\mathbf{S}}
+\def\bD{\mathbf{D}}
+\def\bbeta{\boldsymbol \beta}
+\def\btheta{\boldsymbol \theta}
+\def\bmu{\boldsymbol \mu}
+\def\bSigma{\boldsymbol \Sigma}
+\def\bLambda{\boldsymbol \Lambda}
+\def\beps{\boldsymbol \epsilon}
+\def\T{\text{T}}
+\def\E{\mathrm{E}}
+\def\var{\mathrm{Var}}
+\def\cov{\mathrm{Cov}}
+\def\cor{\mathrm{Corr}}
+\def\se{\mathrm{se}}
+\def\bias{\mathrm{bias}}
+\def\mse{\mathrm{MSE}}
+\def\R{\mathbb{R}}
+\def\P{\mathrm{P}}
+\def\iid{\stackrel{\text{iid}}{\sim}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+```{r}
+#| label: setup
+#| include: false
+#| eval: true
+library(knitr)
+library(ggplot2)
+knitr::opts_chunk$set(
+    fig.asp = 0.618,
+    fig.align = "center",
+    out.width = "100%",
+    fig.retina = 3,
+    fig.path = "./images/99-fdair/",
+    message = FALSE,
+    warning = FALSE,
+    global.par = TRUE
+)
+options(
+  htmltools.dir.version = FALSE,
+  dplyr.print_min = 6, 
+  dplyr.print_max = 6,
+  tibble.width = 80,
+  width = 80,
+  digits = 4
+  )
+hook_output <- knitr::knit_hooks$get("output")
+knitr::knit_hooks$set(output = function(x, options) {
+  lines <- options$output.lines
+  if (is.null(lines)) {
+    return(hook_output(x, options))  # pass to default hook
+  }
+  x <- unlist(strsplit(x, "\n"))
+  more <- "..."
+  if (length(lines)==1) {        # first n lines
+    if (length(x) > lines) {
+      # truncate the output, but add ....
+      x <- c(head(x, lines), more)
+    }
+  } else {
+    x <- c(more, x[lines], more)
+  }
+  # paste these lines together
+  x <- paste(c(x, ""), collapse = "\n")
+  hook_output(x, options)
+})
+ggplot2::theme_set(ggplot2::theme_bw(base_size = 16))
+```
+
+# A Journey Through Functional Data with R
+
+<h2> What is functional data? </h2>
+<h2> Representing functional data: basis expansions (monomial, Fourier, splines) </h2>
+<h2> Smoothing penalties and choosing $\lambda$ </h2>
+<h2> Bivariate bases: tensor products </h2>
+<h2> Dimension reduction: SVD, PCA, ICA, and functional PCA </h2>
+
+::: notes
+- Supplementary deck (converted from 2-FDAiR.pdf). Main sources: Ramsay and Silverman (2005) *Functional Data Analysis*; Ramsay, Hooker and Graves (2009) *Functional Data Analysis with R and Matlab*; G. Hooker's short course handout; Huang, Shen and Buja (2008) for FPCA.
+- Everything is implemented with base R (splines, svd) so the ideas are visible; the fda package (`fda-lab.r`) packages them.
+- Interactive companion: <https://fpca.shinyapps.io/fpca/>
+:::
+
+```{r}
+#| include: false
+temp <- as.matrix(read.csv("data/temp_ca.csv", check.names = FALSE))      # 365 days x 35 stations
+precip <- as.matrix(read.csv("data/precip_ca.csv", check.names = FALSE))
+day <- (1:365) - 0.5
+```
+
+# What Is Functional Data?
+
+## Functional Data: Repeated Measures of a Smooth Process
+
+:::: {.columns}
+::: {.column width="50%"}
+- Data are measurements of **smooth processes** over a continuum (usually time).
+- We do not want parametric assumptions about those processes.
+- Often **multiple** curves of the same process; we describe the **variation** between curves.
+- Frequently high resolution and low noise.
+:::
+::: {.column width="50%"}
+*"Functional data is multivariate data with an ordering on the dimensions."* (Müller, 2006)
+
+$$
+y_{ij} = x_i(t_{ij}) + \epsilon_{ij},\qquad x_i(t)\ \text{smooth}.
+$$
+
+**Functional data** = the functions $x_i(t)$.
+:::
+::::
+
+Applications: medical monitoring (EEG, ECG, fMRI), biology (growth curves), environmental monitoring (weather, pollution), traffic.
+
+## Canadian Weather Data
+
+Average daily temperature and precipitation at 35 Canadian weather stations (classical and much used).
+
+```{r}
+#| fig-asp: 0.38
+par(mfrow = c(1, 2))
+matplot(day, temp, type = "l", lty = 1, col = adjustcolor("#2E5BBA", .5), xlab = "day", ylab = "deg C", main = "Temperature")
+lines(day, temp[, "Vancouver"], lwd = 3, col = "red")
+matplot(day, precip, type = "l", lty = 1, col = adjustcolor("#2E5BBA", .5), xlab = "day", ylab = "mm", main = "Precipitation")
+lines(day, precip[, "Vancouver"], lwd = 3, col = "red")
+```
+
+## Weather in Vancouver and the Challenges
+
+```{r}
+#| fig-asp: 0.33
+par(mfrow = c(1, 2))
+plot(day, temp[, "Vancouver"], pch = 20, col = "#2E5BBA", xlab = "Day", ylab = "Temperature (deg C)", main = "Vancouver")
+plot(day, precip[, "Vancouver"], pch = 1, col = "#2E5BBA", xlab = "Day", ylab = "Precipitation (mm)", main = "Vancouver")
+```
+
+**Challenges:** estimating functions from noisy discrete observations; numerical representation of infinite-dimensional objects; representing variation in infinite dimensions; relationships between functional objects; $n < p = \infty$ (we need smoothness); measures of variation in estimates.
+
+# Representing Functional Data
+
+## From Discrete to Functional Data
+
+Two problems, two methods:
+
+1. **Represent** non-parametric continuous-time functions: **basis expansions**
+$$
+x(t) = \sum_{k=1}^K c_k\phi_k(t) = \boldsymbol\Phi(t)\mathbf c,\quad \phi_k \text{ pre-defined}.
+$$
+2. **Reduce noise** in measurements: **smoothing penalties**
+$$
+\hat{\mathbf c} = \argmin_{\mathbf c}\sum_{i=1}^n\big(y_i - x(t_i)\big)^2 + \lambda\int[Lx(t)]^2dt,
+$$
+where $Lx$ measures the "roughness" of $x$ (e.g. $Lx = x''$) and $\lambda$ trades fit for smoothness.
+
+## Basis Expansions Are Just Regression
+
+From multiple regression $y_i = \beta_0 + \beta_1x_{1i} + \cdots + \epsilon_i$, or with curvature $y_i = \beta_0 + \beta_1t_i + \beta_2t_i^2 + \cdots$. For one record, $y_i = x(t_i) + \epsilon_i$ with $x(t) = \boldsymbol\Phi(t)\mathbf c$:
+
+$$
+\hat{\mathbf c} = (\boldsymbol\Phi^\T\boldsymbol\Phi)^{-1}\boldsymbol\Phi^\T\by,\qquad \hat\by = \bS\by,\ \ \bS = \boldsymbol\Phi(\boldsymbol\Phi^\T\boldsymbol\Phi)^{-1}\boldsymbol\Phi^\T.
+$$
+
+## The Monomial Basis and Its Problems
+
+$\boldsymbol\Phi(t) = (1, t, t^2, t^3, \dots)$
+
+```{r}
+#| fig-asp: 0.36
+y <- temp[, "Vancouver"]; tt <- day / 365
+Phi_mono <- outer(tt, 0:7, `^`)
+kappa(Phi_mono); kappa(cbind(1, poly(tt, 7)))            # monomials are badly conditioned (Ch 13)
+fit_mono <- lm(y ~ poly(tt, 7))
+par(mfrow = c(1, 2))
+matplot(day, Phi_mono[, 2:6], type = "l", lty = 1, lwd = 2, ylab = "basis", main = "Monomial basis")
+plot(day, y, pch = 20, col = "red", main = "Vancouver: degree 7 polynomial"); lines(day, fitted(fit_mono), lwd = 3, col = "#003366")
+```
+
+- Monomial fits have derivatives that behave badly (the second derivative explodes at the ends), and the basis is nearly collinear.
+
+## The Fourier Basis
+
+$$
+1,\ \sin(\omega t),\ \cos(\omega t),\ \sin(2\omega t),\ \cos(2\omega t),\ \dots,\qquad \omega = 2\pi/P.
+$$
+
+```{r}
+#| fig-asp: 0.36
+fourier_basis <- function(t, K, P = 365) {
+  B <- matrix(1, length(t), 1)
+  for (k in 1:K) B <- cbind(B, sin(2 * pi * k * t / P), cos(2 * pi * k * t / P))
+  B
+}
+Phi_f <- fourier_basis(day, 3)
+fit_f <- lm.fit(Phi_f, y)
+par(mfrow = c(1, 2))
+matplot(day, Phi_f[, 2:5], type = "l", lty = c(1, 2, 1, 2), col = c(2, 4, 2, 4), lwd = 2, ylab = "", main = "Fourier basis (k = 1, 2)")
+plot(day, y, pch = 20, col = "red", main = "Vancouver: 7 Fourier functions"); lines(day, Phi_f %*% fit_f$coefficients, lwd = 3, col = "#003366")
+```
+
+- Advantages: excellent computational properties (orthogonal on equally spaced points; FFT), natural for **periodic** data. But representations are periodic: a problem if the data are not.
+
+## Spline Bases
+
+**Truncated power basis** of degree $d$ with knots $\kappa_1,\dots,\kappa_K$:
+$$
+1, t, \dots, t^d, (t-\kappa_1)_+^d, \dots, (t-\kappa_K)_+^d.
+$$
+Piecewise polynomials, joined smoothly ($d-1$ continuous derivatives) at the knots. **B-splines** span the same space with a well-conditioned, compactly supported basis.
+
+```{r}
+#| fig-asp: 0.36
+library(splines)
+kn <- seq(0, 365, length = 9)[-c(1, 9)]
+Phi_b <- bs(day, knots = kn, degree = 3, intercept = TRUE)
+fit_b <- lm.fit(Phi_b, y)
+par(mfrow = c(1, 2))
+matplot(day, Phi_b, type = "l", lty = 1, lwd = 2, ylab = "", main = "Cubic B-spline basis"); abline(v = kn, lty = 3)
+plot(day, y, pch = 20, col = "red", main = "Vancouver: B-spline fit"); lines(day, Phi_b %*% fit_b$coefficients, lwd = 3, col = "#003366")
+```
+
+## Smoothing Penalties: Roughness and $\lambda$
+
+Use **many** basis functions, then penalize roughness. With a B-spline basis, Eilers and Marx's **P-splines** replace $\int[x'']^2$ by a difference penalty on the coefficients:
+
+$$
+\hat{\mathbf c}_\lambda = (\boldsymbol\Phi^\T\boldsymbol\Phi + \lambda\bD^\T\bD)^{-1}\boldsymbol\Phi^\T\by,\qquad \bD = \text{second-difference matrix}.
+$$
+
+```{r}
+#| fig-asp: 0.36
+yp <- precip[, "Vancouver"]
+Phi <- bs(day, df = 40, degree = 3, intercept = TRUE); D <- diff(diag(ncol(Phi)), differences = 2)
+psmooth <- function(lambda) { S <- Phi %*% solve(crossprod(Phi) + lambda * crossprod(D), t(Phi)); list(fit = S %*% yp, df = sum(diag(S))) }
+plot(day, yp, col = "gray50", main = "Vancouver precipitation: P-spline smooths", xlab = "day", ylab = "mm")
+cols <- c("#C0392B", "#003366", "#27AE60")
+for (k in 1:3) lines(day, psmooth(c(0.1, 100, 1e5)[k])$fit, lwd = 3, col = cols[k])
+legend("top", paste("lambda =", c(0.1, 100, 1e5)), col = cols, lwd = 3, bty = "n", horiz = TRUE)
+```
+
+## Choosing $\lambda$: Generalized Cross-Validation
+
+$$
+\text{GCV}(\lambda) = \frac{n\,\text{RSS}(\lambda)}{\big(n - \text{tr}\,\bS_\lambda\big)^2}
+$$
+
+```{r}
+#| fig-asp: 0.33
+lams <- 10^seq(-2, 6, length = 40)
+gcv <- sapply(lams, function(l) { s <- psmooth(l); 365 * sum((yp - s$fit)^2) / (365 - s$df)^2 })
+par(mfrow = c(1, 2))
+plot(lams, gcv, log = "x", type = "l", lwd = 3, xlab = expression(lambda), ylab = "GCV"); abline(v = lams[which.min(gcv)], lty = 2)
+best <- psmooth(lams[which.min(gcv)])
+plot(day, yp, col = "gray50", main = sprintf("GCV choice: df = %.1f", best$df)); lines(day, best$fit, lwd = 3, col = "#003366")
+```
+
+- The same idea as ridge regression (deck 04) with a structured penalty; LOOCV shortcut via the smoother matrix (deck 14).
+
+## Bivariate Case: Tensor Product Bases
+
+If $\{\phi_i(x)\}_{i=1}^N$ and $\{\psi_j(y)\}_{j=1}^M$ are bases in each dimension, the $NM$ tensor product functions $\phi_i(x)\psi_j(y)$ form a basis for surfaces: $\bB = \bB_x\otimes\bB_y$.
+
+```{r}
+#| fig-asp: 0.38
+zv <- volcano; xg <- seq(0, 1, length = nrow(zv)); yg <- seq(0, 1, length = ncol(zv))
+Bx <- bs(xg, df = 10, intercept = TRUE); By <- bs(yg, df = 8, intercept = TRUE)
+B <- kronecker(By, Bx)                                   # (87*61) x (10*8) tensor product design
+cf <- qr.coef(qr(B), as.vector(zv)); zhat <- matrix(B %*% cf, nrow(zv))
+par(mfrow = c(1, 2), mar = c(1, 1, 2, 1))
+persp(xg, yg, zv, theta = 130, phi = 30, col = "#FFCC00", border = NA, shade = .5, main = "volcano (5307 values)")
+persp(xg, yg, zhat, theta = 130, phi = 30, col = "#88A0C8", border = NA, shade = .5, main = "80 tensor B-spline coefficients")
+```
+
+- Irregular domains: bivariate splines on **triangulations** (smoothness conditions across triangle edges).
+
+# Dimension Reduction
+
+## Singular Value Decomposition
+
+$$
+\bX_{n\times m} = \bU\bS\bV^\T,\qquad \bU^\T\bU = \bI,\ \bV^\T\bV = \bI,\ \bS = \text{diag}(s_1\ge s_2\ge\cdots).
+$$
+
+**Truncated SVD:** $\bX_k = \bU_k\bS_k\bV_k^\T$ is the closest rank-$k$ matrix to $\bX$ (Eckart-Young).
+
+```{r}
+#| fig-asp: 0.33
+sv <- svd(volcano)
+par(mfrow = c(1, 4), mar = c(1, 1, 2, 1))
+for (k in c(1, 2, 5, 20)) {
+  Xk <- sv$u[, 1:k, drop = FALSE] %*% diag(sv$d[1:k], k) %*% t(sv$v[, 1:k, drop = FALSE])
+  image(Xk, axes = FALSE, col = terrain.colors(60), main = sprintf("rank %d (%.1f%% energy)", k, 100 * sum(sv$d[1:k]^2) / sum(sv$d^2)))
+}
+```
+
+## PCA, Its Geometry, and the SVD Connection
+
+- Find the direction $\bv$ with the greatest variation: $\argmax_{\|\bv\|=1}\bv^\T\bX^\T\bX\bv = \argmax\|\bX\bv\|^2$ (centered $\bX$): the leading eigenvector of $\bX^\T\bX$.
+- From $\bX = \bU\bS\bV^\T$: $\ \bX^\T\bX = \bV\bS^2\bV^\T$, $\ \bX\bX^\T = \bU\bS^2\bU^\T$, and $\bU = \bX\bV\bS^{-1}$.
+
+```{r}
+Xc <- scale(t(temp), scale = FALSE)                       # 35 stations x 365 days, centered
+s <- svd(Xc); e <- eigen(crossprod(Xc), symmetric = TRUE)
+c(max_eigenvalue_diff = max(abs(e$values[1:5] - s$d[1:5]^2)), PC_variance_share = round(s$d[1:3]^2 / sum(s$d^2), 3))
+```
+
+## Functional PCA of Canadian Temperatures
+
+Treat each station's curve as one observation; the right singular vectors are the **eigenfunctions** $\xi_k(t)$.
+
+```{r}
+#| fig-asp: 0.36
+par(mfrow = c(1, 2))
+mu <- colMeans(t(temp))
+matplot(day, s$v[, 1:3] * -1, type = "l", lty = 1, lwd = 3, col = c("#003366", "#C0392B", "#27AE60"),
+        ylab = expression(xi[k](t)), main = "First three eigenfunctions")
+legend("bottom", sprintf("PC%d (%.1f%%)", 1:3, 100 * s$d[1:3]^2 / sum(s$d^2)), col = c("#003366", "#C0392B", "#27AE60"), lwd = 3, bty = "n")
+plot(day, mu, type = "l", lwd = 3, ylim = c(-35, 25), ylab = "deg C", main = "Mean +/- 2 sd along PC1")
+lines(day, mu + 2 * s$d[1] / sqrt(34) * s$v[, 1], lty = 2, lwd = 2); lines(day, mu - 2 * s$d[1] / sqrt(34) * s$v[, 1], lty = 3, lwd = 2)
+```
+
+- PC1 is roughly "overall warmth" (more variation in winter); PC2 contrasts winter and summer (continental vs maritime climate).
+
+## Station Scores
+
+```{r}
+#| fig-asp: 0.45
+sc <- s$u[, 1:2] %*% diag(s$d[1:2])
+par(mar = c(4, 4, 1, 1))
+plot(-sc, type = "n", xlab = "PC1 score (warm ->)", ylab = "PC2 score")
+text(-sc, labels = colnames(temp), cex = .8, col = ifelse(colnames(temp) %in% c("Vancouver", "Victoria", "Pr. Rupert"), "red", "#003366"))
+```
+
+## FPCA with Smoothing and Missing Data
+
+- Raw SVD eigenfunctions are noisy when curves are noisy or sparsely observed.
+- **Regularized FPCA** (Huang, Shen and Buja, 2008): penalized rank-one approximation
+$$
+\min_{\bu,\bv}\ \|\bX - \bu\bv^\T\|_F^2 + \lambda\,\bu^\T\bu\ \bv^\T\boldsymbol\Omega\bv,
+$$
+solved by alternating ridge-type updates; handles missing entries by fitting only observed cells.
+- Integrating data transformation, smoothing and missing data: <https://fpca.shinyapps.io/fpca/> and the course code in `FDAiR/shiny/`.
+
+## Independent Component Analysis (ICA) vs. PCA
+
+| | PCA | ICA |
+|---|---|---|
+| Model | $\bX = \bU\bS$, $\bU^\T\bU = \bI$ | $\bX = \mathbf A\bS$, $\mathbf A$ invertible |
+| Removes | correlations | correlations **and** higher-order dependence |
+| Components | ordered by importance | equally important |
+| Directions | orthogonal | not orthogonal |
+
+- The **cocktail party problem**: unmix several microphone recordings into the original voices (course code: `ICA/audio-demo.R`, `fastICA`).
+
+```{r}
+#| eval: !expr requireNamespace("fastICA", quietly = TRUE)
+#| fig-asp: 0.3
+set.seed(4750); tt2 <- seq(0, 10, length = 1000)
+S <- cbind(sin(2 * tt2), sign(sin(3 * tt2)))                 # two sources
+X <- S %*% matrix(c(1, 1, -1, 2), 2)                         # two mixed "microphones"
+ica <- fastICA::fastICA(X, n.comp = 2)
+par(mfrow = c(1, 3), mar = c(2, 2, 2, 1))
+matplot(S, type = "l", lty = 1, main = "sources"); matplot(X, type = "l", lty = 1, main = "mixtures")
+matplot(ica$S, type = "l", lty = 1, main = "ICA estimates")
+```
+
+## Summary
+
+::: instructions
+- Functional data: smooth curves observed discretely with noise; think of each curve as **one** observation.
+- Represent with basis expansions (Fourier for periodic, B-splines in general); control roughness with a penalty and choose $\lambda$ by GCV.
+- Surfaces: tensor-product bases; irregular domains: triangulations.
+- Variation: SVD/PCA $\rightarrow$ functional PCA (eigenfunctions and scores); regularize for noisy or incomplete curves.
+:::

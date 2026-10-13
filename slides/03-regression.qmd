@@ -1,0 +1,509 @@
+---
+title: "Linear Regression 📈"
+subtitle: "MATH 4750 / MSSC 5750 Computational Statistics"
+format: 
+  revealjs:
+    code-line-numbers: false
+    html-math-method:
+      method: mathjax
+      url: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    highlight-style: arrow
+    code-block-bg: true
+    self-contained: false
+    slide-number: c/t    
+    incremental: false
+    width: 1800
+    height: 1000
+    margin: 0.05
+    logo: "logo.png"
+    footer: "[mmadoliat.github.io/compstat-s27](https://mmadoliat.github.io/compstat-s27/)"
+    theme: ["simple", "slides.scss"]
+    multiplex: false
+    code-link: true
+    fig-cap-location: bottom
+    fig-align: center
+    transition: none ## fade slide convex concave zoom
+    title-slide-attributes:
+      data-background-image: mu-bg.png
+      data-background-size: stretch
+      data-slide-number: none
+editor: source
+execute:
+  freeze: auto
+  echo: true
+  purl: true
+---
+
+#  {visibility="hidden"}
+
+\def\bx{\mathbf{x}}
+\def\by{\mathbf{y}}
+\def\bz{\mathbf{z}}
+\def\bu{\mathbf{u}}
+\def\bv{\mathbf{v}}
+\def\bw{\mathbf{w}}
+\def\bX{\mathbf{X}}
+\def\bY{\mathbf{Y}}
+\def\bZ{\mathbf{Z}}
+\def\bU{\mathbf{U}}
+\def\bV{\mathbf{V}}
+\def\bW{\mathbf{W}}
+\def\bI{\mathbf{I}}
+\def\bH{\mathbf{H}}
+\def\bS{\mathbf{S}}
+\def\bD{\mathbf{D}}
+\def\bbeta{\boldsymbol \beta}
+\def\btheta{\boldsymbol \theta}
+\def\bmu{\boldsymbol \mu}
+\def\bSigma{\boldsymbol \Sigma}
+\def\bLambda{\boldsymbol \Lambda}
+\def\beps{\boldsymbol \epsilon}
+\def\T{\text{T}}
+\def\E{\mathrm{E}}
+\def\var{\mathrm{Var}}
+\def\cov{\mathrm{Cov}}
+\def\cor{\mathrm{Corr}}
+\def\se{\mathrm{se}}
+\def\bias{\mathrm{bias}}
+\def\mse{\mathrm{MSE}}
+\def\R{\mathbb{R}}
+\def\P{\mathrm{P}}
+\def\iid{\stackrel{\text{iid}}{\sim}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+```{r}
+#| label: setup
+#| include: false
+#| eval: true
+library(knitr)
+library(ggplot2)
+knitr::opts_chunk$set(
+    fig.asp = 0.618,
+    fig.align = "center",
+    out.width = "100%",
+    fig.retina = 3,
+    fig.path = "./images/03-regression/",
+    message = FALSE,
+    warning = FALSE,
+    global.par = TRUE
+)
+options(
+  htmltools.dir.version = FALSE,
+  dplyr.print_min = 6, 
+  dplyr.print_max = 6,
+  tibble.width = 80,
+  width = 80,
+  digits = 4
+  )
+hook_output <- knitr::knit_hooks$get("output")
+knitr::knit_hooks$set(output = function(x, options) {
+  lines <- options$output.lines
+  if (is.null(lines)) {
+    return(hook_output(x, options))  # pass to default hook
+  }
+  x <- unlist(strsplit(x, "\n"))
+  more <- "..."
+  if (length(lines)==1) {        # first n lines
+    if (length(x) > lines) {
+      # truncate the output, but add ....
+      x <- c(head(x, lines), more)
+    }
+  } else {
+    x <- c(more, x[lines], more)
+  }
+  # paste these lines together
+  x <- paste(c(x, ""), collapse = "\n")
+  hook_output(x, options)
+})
+ggplot2::theme_set(ggplot2::theme_bw(base_size = 16))
+```
+
+# Linear Regression
+
+<h2> The linear regression model and least squares </h2>
+<h2> Accuracy of coefficients and of the model </h2>
+<h2> Qualitative predictors and interactions </h2>
+<h2> Potential problems </h2>
+<h2> Linear regression vs. KNN regression </h2>
+
+::: notes
+- Based on Chapter 3 of *An Introduction to Statistical Learning* (James, Witten, Hastie, Tibshirani), <https://www.statlearning.com/>.
+- In this course we look at regression with a computational eye: matrix computations, simulation of sampling distributions, and nonparametric competitors.
+:::
+
+## Linear Regression
+
+- A simple approach to **supervised learning**: assume the dependence of $Y$ on $X_1,\dots,X_p$ is linear.
+- True regression functions are never exactly linear!
+
+```{r}
+#| fig-asp: 0.4
+set.seed(4750)
+f <- function(x) 4 + 0.35 * x + 0.6 * sin(x)
+x <- seq(1.5, 8.5, length = 100)
+plot(x, f(x), type = "l", lwd = 3, col = "red", ylab = "f(x)")
+abline(lm(f(x) ~ x), lwd = 3, col = "blue")
+legend("topleft", c("true f(x)", "best linear approximation"), col = c("red", "blue"), lwd = 3, bty = "n")
+```
+
+- Although it may seem overly simplistic, linear regression is extremely useful both conceptually and practically.
+
+## Advertising Data
+
+```{r}
+#| fig-asp: 0.33
+Advertising <- read.csv("data/Advertising.csv")[, -1]
+par(mfrow = c(1, 3))
+for (v in c("TV", "radio", "newspaper")) {
+  plot(Advertising[[v]], Advertising$sales, pch = 20, col = "#C0392B80", xlab = v, ylab = "sales")
+  abline(lm(Advertising$sales ~ Advertising[[v]]), col = "blue", lwd = 3)
+}
+```
+
+::: question
+Is there a relationship between budget and sales? How strong? Which media contribute? How accurately can we predict future sales? Is it linear? Is there synergy?
+:::
+
+## Simple Linear Regression
+
+$$
+Y = \beta_0 + \beta_1 X + \epsilon
+$$
+
+- $\beta_0, \beta_1$: unknown **intercept** and **slope** (coefficients, parameters); $\epsilon$: error term.
+- Given estimates, predict with $\hat y = \hat\beta_0 + \hat\beta_1 x$.
+
+**Least squares.** With residuals $e_i = y_i - \hat y_i$, minimize $\text{RSS} = e_1^2 + \dots + e_n^2$:
+
+$$
+\hat\beta_1 = \frac{\sum_{i=1}^n (x_i-\bar x)(y_i-\bar y)}{\sum_{i=1}^n (x_i-\bar x)^2},\qquad \hat\beta_0 = \bar y - \hat\beta_1\bar x.
+$$
+
+```{r}
+x <- Advertising$TV; y <- Advertising$sales
+b1 <- sum((x - mean(x)) * (y - mean(y))) / sum((x - mean(x))^2)
+b0 <- mean(y) - b1 * mean(x)
+c(b0 = b0, b1 = b1); coef(lm(sales ~ TV, data = Advertising))
+```
+
+## Least Squares Fit for `sales` onto `TV`
+
+```{r}
+#| fig-asp: 0.45
+fit_tv <- lm(sales ~ TV, data = Advertising)
+plot(sales ~ TV, data = Advertising, pch = 20, col = "red")
+segments(Advertising$TV, Advertising$sales, Advertising$TV, fitted(fit_tv), col = "gray50")
+abline(fit_tv, col = "blue", lwd = 3)
+```
+
+A linear fit captures the essence of the relationship, although it is somewhat deficient in the left of the plot.
+
+## The RSS Surface
+
+```{r}
+#| fig-asp: 0.45
+rss <- function(b0, b1) sum((y - b0 - b1 * x)^2)
+b0g <- seq(5, 9, length = 60); b1g <- seq(0.03, 0.065, length = 60)
+z <- outer(b0g, b1g, Vectorize(rss))
+par(mfrow = c(1, 2))
+contour(b0g, b1g, z / 1000, nlevels = 15, xlab = expression(beta[0]), ylab = expression(beta[1]))
+points(b0, b1, pch = 19, col = "red", cex = 2)
+persp(b0g, b1g, z / 1000, theta = 30, phi = 25, col = "#FFCC00", border = NA, shade = 0.5,
+      xlab = "b0", ylab = "b1", zlab = "RSS/1000")
+```
+
+## Accuracy of the Coefficient Estimates
+
+$$
+\se(\hat\beta_1)^2 = \frac{\sigma^2}{\sum_{i=1}^n(x_i-\bar x)^2},\qquad
+\se(\hat\beta_0)^2 = \sigma^2\left[\frac1n + \frac{\bar x^2}{\sum_{i=1}^n (x_i-\bar x)^2}\right],\qquad \sigma^2 = \var(\epsilon).
+$$
+
+- An approximate 95% **confidence interval**: $\hat\beta_1 \pm 2\cdot\se(\hat\beta_1)$.
+
+::: question
+What does "95% confidence" mean? Let's *simulate* repeated samples from a known model.
+:::
+
+## Simulating the Sampling Distribution of $\hat\beta_1$
+
+```{r}
+#| fig-asp: 0.35
+set.seed(4750)
+beta0 <- 2; beta1 <- 3; sigma <- 2; xs <- runif(100, -2, 2)        # fixed design
+sims <- t(replicate(2000, {
+  ys <- beta0 + beta1 * xs + rnorm(100, sd = sigma)
+  ft <- summary(lm(ys ~ xs))$coefficients
+  c(est = ft[2, 1], se = ft[2, 2])
+}))
+c(sd_of_estimates = sd(sims[, "est"]), theory = sigma / sqrt(sum((xs - mean(xs))^2)))
+covered <- abs(sims[, "est"] - beta1) <= qt(.975, 98) * sims[, "se"]
+mean(covered)                                 # empirical coverage
+hist(sims[, "est"], breaks = 40, col = "#FFCC00", main = expression(paste("2000 draws of ", hat(beta)[1])))
+```
+
+## Hypothesis Testing and the $t$ Statistic
+
+$$
+H_0: \beta_1 = 0 \quad\text{(no relationship)}\qquad\text{vs}\qquad H_A: \beta_1\neq 0
+$$
+
+$$
+t = \frac{\hat\beta_1 - 0}{\se(\hat\beta_1)} \sim t_{n-2}\ \text{under } H_0
+$$
+
+```{r}
+summary(fit_tv)$coefficients
+confint(fit_tv)
+```
+
+## Assessing the Overall Accuracy of the Model
+
+- **Residual standard error:** $\text{RSE} = \sqrt{\text{RSS}/(n-2)}$
+- **$R^2$** $= \dfrac{\text{TSS}-\text{RSS}}{\text{TSS}} = 1 - \dfrac{\text{RSS}}{\text{TSS}}$, $\quad \text{TSS} = \sum(y_i-\bar y)^2$
+- In simple regression, $R^2 = r^2 = \cor(X,Y)^2$
+
+```{r}
+RSS <- sum(resid(fit_tv)^2); TSS <- sum((y - mean(y))^2)
+c(RSE = sqrt(RSS / (length(y) - 2)), R2 = 1 - RSS / TSS, r2 = cor(x, y)^2)
+```
+
+# Multiple Linear Regression
+
+## The Model and Its Matrix Form
+
+$$
+Y = \beta_0 + \beta_1X_1 + \cdots + \beta_pX_p + \epsilon, \qquad \by = \bX\bbeta + \beps
+$$
+
+$$
+\hat\bbeta = \argmin_{\bbeta}\|\by - \bX\bbeta\|^2 = (\bX^\T\bX)^{-1}\bX^\T\by
+$$
+
+- Interpret $\beta_j$ as the average effect on $Y$ of a one-unit increase in $X_j$, **holding all other predictors fixed**.
+
+```{r}
+X <- cbind(1, as.matrix(Advertising[, c("TV", "radio", "newspaper")]))
+bhat_normal <- solve(t(X) %*% X, t(X) %*% Advertising$sales)   # normal equations
+bhat_qr <- qr.coef(qr(X), Advertising$sales)                      # what lm() actually does
+cbind(bhat_normal, bhat_qr)
+```
+
+::: notes
+- lm uses a QR decomposition, which is numerically more stable than solving the normal equations (Chapter 13).
+:::
+
+## Results for the Advertising Data
+
+```{r}
+fit3 <- lm(sales ~ TV + radio + newspaper, data = Advertising)
+summary(fit3)$coefficients
+round(cor(Advertising), 3)
+```
+
+::: question
+`newspaper` is significant on its own but not in the multiple regression. Why? Look at the correlation between `radio` and `newspaper`.
+:::
+
+## Is At Least One Predictor Useful? The $F$ Test
+
+$$
+H_0:\beta_1 = \cdots = \beta_p = 0,\qquad F = \frac{(\text{TSS}-\text{RSS})/p}{\text{RSS}/(n-p-1)}\sim F_{p,\,n-p-1}
+$$
+
+```{r}
+anova(lm(sales ~ 1, data = Advertising), fit3)
+```
+
+- **Deciding on important variables:** all subsets ($2^p$ models!), forward, backward selection; use $C_p$, AIC, BIC, adjusted $R^2$, or cross-validation (Ch 8).
+
+## Prediction: Confidence vs. Prediction Intervals
+
+```{r}
+fit2 <- lm(sales ~ TV + radio, data = Advertising)
+new <- data.frame(TV = 100, radio = 20)
+predict(fit2, new, interval = "confidence")
+predict(fit2, new, interval = "prediction")
+```
+
+- **Confidence interval:** uncertainty about $f(X) = \E[Y\mid X]$ (reducible error).
+- **Prediction interval:** also includes the irreducible error $\epsilon$, so it is always wider.
+
+# Other Considerations
+
+## Qualitative Predictors
+
+```{r}
+library(ISLR2)
+str(Credit[, c("Balance", "Income", "Student", "Region", "Own")])
+summary(lm(Balance ~ Own, data = Credit))$coefficients
+```
+
+- A factor with $k$ levels enters through $k-1$ **dummy variables**; the baseline is absorbed into the intercept.
+
+```{r}
+head(model.matrix(~ Region, data = Credit), 4)
+```
+
+## Interactions: Advertising Data
+
+$$
+\texttt{sales} = \beta_0+\beta_1\texttt{TV}+\beta_2\texttt{radio}+\beta_3(\texttt{radio}\times\texttt{TV}) + \epsilon
+= \beta_0 + (\beta_1+\beta_3\,\texttt{radio})\texttt{TV} + \beta_2\texttt{radio} + \epsilon
+$$
+
+```{r}
+fit_int <- lm(sales ~ TV * radio, data = Advertising)
+summary(fit_int)$coefficients
+c(R2_additive = summary(fit2)$r.squared, R2_interaction = summary(fit_int)$r.squared)
+```
+
+- The interaction explains $(96.8-89.7)/(100-89.7)\approx 69\%$ of the variability left after the additive model.
+- A $\$1{,}000$ increase in TV is associated with $(\hat\beta_1 + \hat\beta_3\times\texttt{radio})\times 1000$ more units sold.
+
+## The Hierarchy Principle
+
+::: alert
+If we include an interaction in a model, we should also include the main effects, even if the $p$-values associated with their coefficients are not significant.
+:::
+
+- Interactions are hard to interpret in a model without main effects; their meaning changes.
+- The interaction terms also contain main effects if the model has no main-effect terms.
+
+## Qualitative $\times$ Quantitative Interactions: Credit Data
+
+```{r}
+#| fig-asp: 0.38
+f_add <- lm(Balance ~ Income + Student, data = Credit)
+f_int <- lm(Balance ~ Income * Student, data = Credit)
+par(mfrow = c(1, 2)); inc <- 0:150
+for (f in list(f_add, f_int)) {
+  plot(NA, xlim = c(0, 150), ylim = c(200, 1500), xlab = "Income", ylab = "Balance",
+       main = if (identical(f, f_add)) "no interaction" else "with interaction")
+  lines(inc, predict(f, data.frame(Income = inc, Student = "Yes")), col = "red", lwd = 3)
+  lines(inc, predict(f, data.frame(Income = inc, Student = "No")), lwd = 3)
+}
+```
+
+## Non-linear Effects: Polynomial Regression on `Auto`
+
+```{r}
+#| fig-asp: 0.42
+plot(mpg ~ horsepower, data = Auto, col = "gray50", pch = 1)
+hp <- seq(40, 230, length = 200)
+cols <- c("orange", "#3D85C6", "#00A087")
+for (k in seq_along(c(1, 2, 5))) {
+  d <- c(1, 2, 5)[k]
+  lines(hp, predict(lm(mpg ~ poly(horsepower, d), data = Auto), data.frame(horsepower = hp)), lwd = 3, col = cols[k])
+}
+legend("topright", c("Linear", "Degree 2", "Degree 5"), col = cols, lwd = 3, bty = "n")
+summary(lm(mpg ~ horsepower + I(horsepower^2), data = Auto))$coefficients
+```
+
+# Potential Problems
+
+## Six Things That Can Go Wrong
+
+:::: {.columns}
+::: {.column width="45%"}
+1. Non-linearity of the response-predictor relationship
+2. Correlation of error terms
+3. Non-constant variance of errors
+4. Outliers
+5. High-leverage points
+6. Collinearity
+:::
+::: {.column width="55%"}
+```{r}
+#| fig-asp: 0.9
+par(mfrow = c(2, 2), mar = c(4, 4, 2, 1))
+plot(lm(mpg ~ horsepower, data = Auto), which = c(1, 3, 5, 2), pch = 20, col = "#00336680")
+```
+:::
+::::
+
+## Collinearity and the Variance Inflation Factor
+
+$$
+\text{VIF}(\hat\beta_j) = \frac{1}{1-R^2_{X_j\mid X_{-j}}}
+$$
+
+```{r}
+vif <- function(fit) {
+  X <- model.matrix(fit)[, -1]
+  sapply(seq_len(ncol(X)), function(j) 1 / (1 - summary(lm(X[, j] ~ X[, -j]))$r.squared)) |>
+    setNames(colnames(X))
+}
+round(vif(lm(Balance ~ Age + Limit + Rating, data = Credit)), 2)
+```
+
+::: tip
+`Limit` and `Rating` are almost perfectly correlated: their coefficients become unstable. This motivates **ridge regression** (next lecture).
+:::
+
+# Linear vs. KNN Regression
+
+## KNN Regression
+
+- To predict at $x_0$, average the responses of the $K$ closest training points: $\hat f(x_0) = \dfrac1K\sum_{x_i\in\mathcal N_0} y_i$.
+- Small $K$: very flexible (low bias, high variance). Large $K$: smooth (high bias, low variance).
+
+```{r}
+knn_reg <- function(xtrain, ytrain, xtest, k) {
+  xtrain <- as.matrix(xtrain); xtest <- as.matrix(xtest)
+  apply(xtest, 1, function(x0) {
+    d <- sqrt(colSums((t(xtrain) - x0)^2))
+    mean(ytrain[order(d)[1:k]])
+  })
+}
+```
+
+## KNN Fits for $K = 1$ and $K = 9$
+
+```{r}
+#| fig-asp: 0.38
+set.seed(4750); n <- 100
+xtr <- runif(n, 1, 6); ytr <- sin(xtr) + 0.2 * xtr + rnorm(n, sd = 0.4)
+grid <- seq(1, 6, length = 400)
+par(mfrow = c(1, 2))
+for (k in c(1, 9)) {
+  plot(xtr, ytr, pch = 1, col = "gray40", main = paste("K =", k), xlab = "x", ylab = "y")
+  lines(grid, knn_reg(xtr, ytr, grid, k), col = "#003366", lwd = 3, type = "s")
+  lines(grid, sin(grid) + 0.2 * grid, col = "red", lwd = 2, lty = 2)
+}
+```
+
+## Linear Regression vs. KNN as the Dimension Grows
+
+```{r}
+#| fig-asp: 0.38
+set.seed(4750)
+sim_mse <- function(p, k, n = 100, ntest = 500) {
+  Xtr <- matrix(runif(n * p, -1, 1), n); Xte <- matrix(runif(ntest * p, -1, 1), ntest)
+  ftrue <- function(X) 2 * X[, 1] + sin(3 * X[, 1])   # only X1 matters
+  ytr <- ftrue(Xtr) + rnorm(n, sd = .5); yte <- ftrue(Xte) + rnorm(ntest, sd = .5)
+  c(knn = mean((yte - knn_reg(Xtr, ytr, Xte, k))^2),
+    lm = mean((yte - cbind(1, Xte) %*% coef(lm(ytr ~ Xtr)))^2))
+}
+res <- sapply(c(1, 2, 3, 4, 10, 20), function(p) sim_mse(p, k = 9))
+matplot(c(1, 2, 3, 4, 10, 20), t(res), type = "b", pch = 19, lwd = 3, col = c("#00A087", "black"), lty = 1,
+        log = "x", xlab = "number of predictors p", ylab = "test MSE", main = "Curse of dimensionality")
+legend("topleft", c("KNN (K = 9)", "linear regression"), col = c("#00A087", "black"), lwd = 3, bty = "n")
+```
+
+::: alert
+KNN suffers from the **curse of dimensionality**: in high dimensions, the $K$ nearest neighbors are far away.
+:::
+
+## Summary
+
+::: instructions
+- Least squares = projection: $\hat\bbeta = (\bX^\T\bX)^{-1}\bX^\T\by$ (computed via QR).
+- SEs, CIs, $t$ and $F$ tests describe *sampling variability*, which we can also see by simulation.
+- Dummy variables, interactions (hierarchy!), polynomial terms extend the linear model.
+- Diagnose: non-linearity, heteroscedasticity, outliers, leverage, collinearity (VIF).
+- Parametric (linear) vs. nonparametric (KNN): bias-variance and the curse of dimensionality.
+:::
+
+[Interactive app: [Regression Shiny app](http://dna.mscsnet.mu.edu:3838/mlab/Regression/)]{.small}
