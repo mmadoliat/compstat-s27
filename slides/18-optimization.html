@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles"><meta charset="utf-8">
+  <meta name="generator" content="quarto-1.10.18">
+
+  <meta name="author" content="Dr.&nbsp;Mehdi Maadooliat">
+  <title>MATH 4750 (MSSC 5750) – Optimization ⛰️</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+  <link rel="stylesheet" href="../site_libs/revealjs/dist/reset.css">
+  <link rel="stylesheet" href="../site_libs/revealjs/dist/reveal.css">
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      { color: #003b4f; background-color: #f1f3f5; }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span { color: #003b4f; } /* Normal */
+    code span.al { color: #ad0000; } /* Alert */
+    code span.an { color: #5e5e5e; } /* Annotation */
+    code span.at { color: #657422; } /* Attribute */
+    code span.bn { color: #ad0000; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #003b4f; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #20794d; } /* Char */
+    code span.cn { color: #8f5902; } /* Constant */
+    code span.co { color: #5e5e5e; } /* Comment */
+    code span.cv { color: #5e5e5e; font-style: italic; } /* CommentVar */
+    code span.do { color: #5e5e5e; font-style: italic; } /* Documentation */
+    code span.dt { color: #ad0000; } /* DataType */
+    code span.dv { color: #ad0000; } /* DecVal */
+    code span.er { color: #ad0000; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #ad0000; } /* Float */
+    code span.fu { color: #4758ab; } /* Function */
+    code span.im { color: #00769e; } /* Import */
+    code span.in { color: #5e5e5e; } /* Information */
+    code span.kw { color: #003b4f; font-weight: bold; } /* Keyword */
+    code span.op { color: #5e5e5e; } /* Operator */
+    code span.ot { color: #003b4f; } /* Other */
+    code span.pp { color: #ad0000; } /* Preprocessor */
+    code span.sc { color: #5e5e5e; } /* SpecialChar */
+    code span.ss { color: #20794d; } /* SpecialString */
+    code span.st { color: #20794d; } /* String */
+    code span.va { color: #111111; } /* Variable */
+    code span.vs { color: #20794d; } /* VerbatimString */
+    code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../site_libs/revealjs/dist/theme/quarto-aa3c25cd00179041a18f150a91e83d28.css">
+  <link href="../site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
+  <link href="../site_libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
+  <link href="../site_libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
+  <link href="../site_libs/revealjs/plugin/reveal-chalkboard/font-awesome/css/all.css" rel="stylesheet">
+  <link href="../site_libs/revealjs/plugin/reveal-chalkboard/style.css" rel="stylesheet">
+  <link href="../site_libs/revealjs/plugin/quarto-support/footer.css" rel="stylesheet">
+  <style type="text/css">
+    .reveal div.sourceCode {
+      margin: 0;
+      overflow: auto;
+    }
+    .reveal div.hanging-indent {
+      margin-left: 1em;
+      text-indent: -1em;
+    }
+    .reveal .slide:not(.center) {
+      height: 100%;
+    }
+    .reveal .slide.scrollable {
+      overflow-y: auto;
+    }
+    .reveal .footnotes {
+      height: 100%;
+      overflow-y: auto;
+    }
+    .reveal .slide .absolute {
+      position: absolute;
+      display: block;
+    }
+    .reveal .footnotes ol {
+      counter-reset: ol;
+      list-style-type: none; 
+      margin-left: 0;
+    }
+    .reveal .footnotes ol li:before {
+      counter-increment: ol;
+      content: counter(ol) ". "; 
+    }
+    .reveal .footnotes ol li > p:first-child {
+      display: inline-block;
+    }
+    .reveal .slide ul,
+    .reveal .slide ol {
+      margin-bottom: 0.5em;
+    }
+    .reveal .slide ul li,
+    .reveal .slide ol li {
+      margin-top: 0.4em;
+      margin-bottom: 0.2em;
+    }
+    .reveal .slide ul[role="tablist"] li {
+      margin-bottom: 0;
+    }
+    .reveal .slide ul li > *:first-child,
+    .reveal .slide ol li > *:first-child {
+      margin-block-start: 0;
+    }
+    .reveal .slide ul li > *:last-child,
+    .reveal .slide ol li > *:last-child {
+      margin-block-end: 0;
+    }
+    .reveal .slide .columns:nth-child(3) {
+      margin-block-start: 0.8em;
+    }
+    .reveal blockquote {
+      box-shadow: none;
+    }
+    .reveal .tippy-content>* {
+      margin-top: 0.2em;
+      margin-bottom: 0.7em;
+    }
+    .reveal .tippy-content>*:last-child {
+      margin-bottom: 0.2em;
+    }
+    .reveal .slide > img.stretch.quarto-figure-center,
+    .reveal .slide > img.r-stretch.quarto-figure-center {
+      display: block;
+      margin-left: auto;
+      margin-right: auto; 
+    }
+    .reveal .slide > img.stretch.quarto-figure-left,
+    .reveal .slide > img.r-stretch.quarto-figure-left  {
+      display: block;
+      margin-left: 0;
+      margin-right: auto; 
+    }
+    .reveal .slide > img.stretch.quarto-figure-right,
+    .reveal .slide > img.r-stretch.quarto-figure-right  {
+      display: block;
+      margin-left: auto;
+      margin-right: 0; 
+    }
+  </style>
+<meta property="og:title" content="Optimization ⛰️ – MATH 4750 (MSSC 5750)">
+<meta property="og:description" content="MATH 4750 / MSSC 5750 Computational Statistics">
+<meta property="og:site_name" content="MATH 4750 (MSSC 5750)">
+<meta name="twitter:title" content="Optimization ⛰️ – MATH 4750 (MSSC 5750)">
+<meta name="twitter:description" content="MATH 4750 / MSSC 5750 Computational Statistics">
+<meta name="twitter:image" content="https://mmadoliat.github.io/compstat-s27/slides/images/twitter-card.png">
+<meta name="twitter:creator" content="@mmadoliat">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body class="quarto-light">
+  <div class="reveal">
+    <div class="slides">
+
+<section id="title-slide" data-background-image="mu-bg.png" data-background-size="stretch" data-slide-number="none" class="quarto-title-block center">
+  <h1 class="title">Optimization ⛰️</h1>
+  <p class="subtitle">MATH 4750 / MSSC 5750 Computational Statistics</p>
+
+<div class="quarto-title-authors">
+<div class="quarto-title-author">
+<div class="quarto-title-author-name">
+Dr.&nbsp;Mehdi Maadooliat
+</div>
+        <p class="quarto-title-affiliation">
+            Marquette University <br> MATH 4750 - Spring 2027
+          </p>
+    </div>
+</div>
+
+</section>
+
+
+<section>
+<section id="optimization" class="title-slide slide level1 center">
+<h1>Optimization</h1>
+<h2>
+One-dimensional optimization
+</h2>
+<h2>
+Newton, gradient descent, and quasi-Newton methods
+</h2>
+<h2>
+Multi-dimensional optimization with <code>optim()</code>: maximum likelihood
+</h2>
+<h2>
+Constrained problems and linear programming
+</h2>
+<aside class="notes">
+<ul>
+<li>Rizzo Chapter 14 (Sections 14.1-14.3 and 14.5). The EM algorithm (14.4) has its own deck.</li>
+</ul>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="optimization-is-everywhere-in-statistics" class="slide level2">
+<h2>Optimization Is Everywhere in Statistics</h2>
+<ul>
+<li>Maximum likelihood: <span class="math inline">\(\hat\theta = \mathop{\mathrm{arg\,max}}_\theta\ell(\theta)\)</span></li>
+<li>Least squares, ridge, lasso: <span class="math inline">\(\mathop{\mathrm{arg\,min}}_\beta\ \text{RSS} + \lambda\,\text{penalty}\)</span></li>
+<li>K-means: <span class="math inline">\(\mathop{\mathrm{arg\,min}}_{C, c}\sum_k\sum_{C(i)=k}\|X_i - c_k\|^2\)</span></li>
+<li>Neural networks: minimize a loss over millions of weights</li>
+<li>Bandwidth selection: minimize UCV<span class="math inline">\((h)\)</span></li>
+</ul>
+<p>R’s toolbox: <code>optimize()</code> (1-d), <code>optim()</code> (Nelder-Mead, BFGS, CG, L-BFGS-B, SANN, Brent), <code>nlm()</code>, <code>nlminb()</code>, <code>constrOptim()</code>, <code>boot::simplex()</code> (linear programming).</p>
+</section>
+<section id="example-14.1-one-dimensional-optimization" class="slide level2">
+<h2>Example 14.1: One-Dimensional Optimization</h2>
+<p>Maximize <span class="math inline">\(f(x) = \dfrac{\log(x + \log x)}{\log(1+x)}\)</span>.</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">log</span>(x <span class="sc">+</span> <span class="fu">log</span>(x)) <span class="sc">/</span> <span class="fu">log</span>(<span class="dv">1</span> <span class="sc">+</span> x)</span>
+<span id="cb1-2"><a aria-hidden="true" tabindex="-1"></a><span class="fu">curve</span>(<span class="fu">f</span>(x), <span class="at">from =</span> <span class="dv">2</span>, <span class="at">to =</span> <span class="dv">15</span>, <span class="at">ylab =</span> <span class="st">"f(x)"</span>, <span class="at">lwd =</span> <span class="dv">3</span>, <span class="at">col =</span> <span class="st">"#003366"</span>)</span>
+<span id="cb1-3"><a aria-hidden="true" tabindex="-1"></a>opt <span class="ot">&lt;-</span> <span class="fu">optimize</span>(f, <span class="at">lower =</span> <span class="dv">4</span>, <span class="at">upper =</span> <span class="dv">8</span>, <span class="at">maximum =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb1-4"><a aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> opt<span class="sc">$</span>maximum, <span class="at">lty =</span> <span class="dv">2</span>, <span class="at">col =</span> <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a aria-hidden="true" tabindex="-1"></a><span class="fu">unlist</span>(opt)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  maximum objective 
+    5.792     1.055 </code></pre>
+</div>
+</div>
+<img data-src="./images/18-optimization/unnamed-chunk-2-1.png" class="quarto-figure quarto-figure-center r-stretch" style="width:100.0%"><ul>
+<li><code>optimize</code> uses golden-section search with parabolic interpolation; it finds a <strong>local</strong> optimum in the interval.</li>
+</ul>
+</section>
+<section id="golden-section-search-by-hand" class="slide level2">
+<h2>Golden-Section Search by Hand</h2>
+<p>Keep a bracket <span class="math inline">\([a,b]\)</span> and two interior points at the golden ratio <span class="math inline">\(\phi = (\sqrt5 - 1)/2\)</span>; each step discards a fraction <span class="math inline">\(1-\phi\approx 0.382\)</span> of the bracket using <strong>one</strong> new function evaluation.</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a aria-hidden="true" tabindex="-1"></a>golden <span class="ot">&lt;-</span> <span class="cf">function</span>(f, a, b, <span class="at">tol =</span> <span class="fl">1e-8</span>) {</span>
+<span id="cb4-2"><a aria-hidden="true" tabindex="-1"></a>  phi <span class="ot">&lt;-</span> (<span class="fu">sqrt</span>(<span class="dv">5</span>) <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">/</span> <span class="dv">2</span>; x1 <span class="ot">&lt;-</span> b <span class="sc">-</span> phi <span class="sc">*</span> (b <span class="sc">-</span> a); x2 <span class="ot">&lt;-</span> a <span class="sc">+</span> phi <span class="sc">*</span> (b <span class="sc">-</span> a); f1 <span class="ot">&lt;-</span> <span class="fu">f</span>(x1); f2 <span class="ot">&lt;-</span> <span class="fu">f</span>(x2); k <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb4-3"><a aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> (b <span class="sc">-</span> a <span class="sc">&gt;</span> tol) {</span>
+<span id="cb4-4"><a aria-hidden="true" tabindex="-1"></a>    k <span class="ot">&lt;-</span> k <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb4-5"><a aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (f1 <span class="sc">&gt;</span> f2) { b <span class="ot">&lt;-</span> x2; x2 <span class="ot">&lt;-</span> x1; f2 <span class="ot">&lt;-</span> f1; x1 <span class="ot">&lt;-</span> b <span class="sc">-</span> phi <span class="sc">*</span> (b <span class="sc">-</span> a); f1 <span class="ot">&lt;-</span> <span class="fu">f</span>(x1) }   <span class="co"># maximize</span></span>
+<span id="cb4-6"><a aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>         { a <span class="ot">&lt;-</span> x1; x1 <span class="ot">&lt;-</span> x2; f1 <span class="ot">&lt;-</span> f2; x2 <span class="ot">&lt;-</span> a <span class="sc">+</span> phi <span class="sc">*</span> (b <span class="sc">-</span> a); f2 <span class="ot">&lt;-</span> <span class="fu">f</span>(x2) }</span>
+<span id="cb4-7"><a aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb4-8"><a aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="at">maximum =</span> (a <span class="sc">+</span> b) <span class="sc">/</span> <span class="dv">2</span>, <span class="at">iterations =</span> k)</span>
+<span id="cb4-9"><a aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-10"><a aria-hidden="true" tabindex="-1"></a><span class="fu">golden</span>(f, <span class="dv">4</span>, <span class="dv">8</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   maximum iterations 
+     5.792     42.000 </code></pre>
+</div>
+</div>
+</section>
+<section id="newtons-method-and-its-relatives" class="slide level2">
+<h2>Newton’s Method and Its Relatives</h2>
+<p>To maximize <span class="math inline">\(\ell(\theta)\)</span>, solve <span class="math inline">\(\nabla\ell(\theta) = \mathbf 0\)</span> with Newton’s method:</p>
+<p><span class="math display">\[
+\theta_{k+1} = \theta_k - \big[\nabla^2\ell(\theta_k)\big]^{-1}\nabla\ell(\theta_k).
+\]</span></p>
+<table class="caption-top">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Method</th>
+<th>Uses</th>
+<th>Convergence</th>
+<th>Cost per step</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Gradient ascent</td>
+<td><span class="math inline">\(\nabla\ell\)</span></td>
+<td>linear</td>
+<td>cheap</td>
+</tr>
+<tr class="even">
+<td>Newton-Raphson</td>
+<td><span class="math inline">\(\nabla\ell\)</span>, <span class="math inline">\(\nabla^2\ell\)</span></td>
+<td>quadratic (near optimum)</td>
+<td>Hessian + solve</td>
+</tr>
+<tr class="odd">
+<td>Fisher scoring</td>
+<td><span class="math inline">\(\nabla\ell\)</span>, <span class="math inline">\(\mathcal I(\theta)\)</span></td>
+<td>~quadratic</td>
+<td>expected information</td>
+</tr>
+<tr class="even">
+<td>Quasi-Newton (BFGS)</td>
+<td><span class="math inline">\(\nabla\ell\)</span>, Hessian approximation</td>
+<td>superlinear</td>
+<td>cheap updates</td>
+</tr>
+<tr class="odd">
+<td>Nelder-Mead</td>
+<td><span class="math inline">\(\ell\)</span> only</td>
+<td>slow, robust</td>
+<td>function evaluations</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="gradient-descent-vs.-newton-on-a-quadratic" class="slide level2">
+<h2>Gradient Descent vs.&nbsp;Newton on a Quadratic</h2>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a aria-hidden="true" tabindex="-1"></a>A <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">3</span>, <span class="fl">1.4</span>, <span class="fl">1.4</span>, <span class="dv">1</span>), <span class="dv">2</span>); b <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb6-2"><a aria-hidden="true" tabindex="-1"></a>fq <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fl">0.5</span> <span class="sc">*</span> <span class="fu">sum</span>(x <span class="sc">*</span> (A <span class="sc">%*%</span> x)) <span class="sc">-</span> <span class="fu">sum</span>(b <span class="sc">*</span> x)        <span class="co"># minimum at solve(A, b)</span></span>
+<span id="cb6-3"><a aria-hidden="true" tabindex="-1"></a>gq <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">as.vector</span>(A <span class="sc">%*%</span> x <span class="sc">-</span> b)</span>
+<span id="cb6-4"><a aria-hidden="true" tabindex="-1"></a>gd <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">step =</span> <span class="fl">0.25</span>, <span class="at">n =</span> <span class="dv">40</span>) { path <span class="ot">&lt;-</span> x; <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n) { x <span class="ot">&lt;-</span> x <span class="sc">-</span> step <span class="sc">*</span> <span class="fu">gq</span>(x); path <span class="ot">&lt;-</span> <span class="fu">rbind</span>(path, x) }; path }</span>
+<span id="cb6-5"><a aria-hidden="true" tabindex="-1"></a>nt <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">n =</span> <span class="dv">2</span>) { path <span class="ot">&lt;-</span> x; <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n) { x <span class="ot">&lt;-</span> x <span class="sc">-</span> <span class="fu">solve</span>(A, <span class="fu">gq</span>(x)); path <span class="ot">&lt;-</span> <span class="fu">rbind</span>(path, x) }; path }</span>
+<span id="cb6-6"><a aria-hidden="true" tabindex="-1"></a>g1 <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="dv">3</span>, <span class="dv">3</span>, <span class="at">length =</span> <span class="dv">100</span>); z <span class="ot">&lt;-</span> <span class="fu">outer</span>(g1, g1, <span class="fu">Vectorize</span>(<span class="cf">function</span>(u, v) <span class="fu">fq</span>(<span class="fu">c</span>(u, v))))</span>
+<span id="cb6-7"><a aria-hidden="true" tabindex="-1"></a><span class="fu">contour</span>(g1, g1, z, <span class="at">nlevels =</span> <span class="dv">25</span>, <span class="at">col =</span> <span class="st">"gray60"</span>, <span class="at">asp =</span> <span class="dv">1</span>, <span class="at">xlab =</span> <span class="fu">expression</span>(theta[<span class="dv">1</span>]), <span class="at">ylab =</span> <span class="fu">expression</span>(theta[<span class="dv">2</span>]))</span>
+<span id="cb6-8"><a aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(<span class="fu">gd</span>(<span class="fu">c</span>(<span class="sc">-</span><span class="fl">2.5</span>, <span class="fl">2.5</span>)), <span class="at">type =</span> <span class="st">"b"</span>, <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">col =</span> <span class="st">"#C0392B"</span>, <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb6-9"><a aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(<span class="fu">nt</span>(<span class="fu">c</span>(<span class="sc">-</span><span class="fl">2.5</span>, <span class="fl">2.5</span>)), <span class="at">type =</span> <span class="st">"b"</span>, <span class="at">pch =</span> <span class="dv">17</span>, <span class="at">col =</span> <span class="st">"#003366"</span>, <span class="at">lwd =</span> <span class="dv">3</span>, <span class="at">cex =</span> <span class="fl">1.5</span>)</span>
+<span id="cb6-10"><a aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">"topright"</span>, <span class="fu">c</span>(<span class="st">"gradient descent (40 steps)"</span>, <span class="st">"Newton (1 step!)"</span>), <span class="at">col =</span> <span class="fu">c</span>(<span class="st">"#C0392B"</span>, <span class="st">"#003366"</span>), <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">pch =</span> <span class="fu">c</span>(<span class="dv">19</span>, <span class="dv">17</span>), <span class="at">bty =</span> <span class="st">"n"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+
+</div>
+<img data-src="./images/18-optimization/unnamed-chunk-4-1.png" class="quarto-figure quarto-figure-center r-stretch" style="width:100.0%"></section>
+<section id="example-14.2-mle-for-the-gamma-distribution" class="slide level2">
+<h2>Example 14.2: MLE for the Gamma Distribution</h2>
+<p><span class="math display">\[
+\ell(r,\lambda) = nr\log\lambda + (r-1)\sum\log x_i - \lambda\sum x_i - n\log\Gamma(r).
+\]</span></p>
+<p>Setting <span class="math inline">\(\partial\ell/\partial\lambda = 0\)</span> gives <span class="math inline">\(\lambda = r/\bar x\)</span>; substituting, <span class="math inline">\(r\)</span> solves the <strong>one</strong>-dimensional equation</p>
+<p><span class="math display">\[
+\log r - \psi(r) = \log\bar x - \overline{\log x}\qquad(\psi = \text{digamma}).
+\]</span></p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">4750</span>); m <span class="ot">&lt;-</span> <span class="dv">2000</span>; est <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, m, <span class="dv">2</span>); n <span class="ot">&lt;-</span> <span class="dv">200</span>; r <span class="ot">&lt;-</span> <span class="dv">5</span>; lambda <span class="ot">&lt;-</span> <span class="dv">2</span></span>
+<span id="cb7-2"><a aria-hidden="true" tabindex="-1"></a>obj <span class="ot">&lt;-</span> <span class="cf">function</span>(r, x) <span class="fu">log</span>(r) <span class="sc">-</span> <span class="fu">digamma</span>(r) <span class="sc">-</span> (<span class="fu">log</span>(<span class="fu">mean</span>(x)) <span class="sc">-</span> <span class="fu">mean</span>(<span class="fu">log</span>(x)))</span>
+<span id="cb7-3"><a aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>m) {</span>
+<span id="cb7-4"><a aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">rgamma</span>(n, <span class="at">shape =</span> r, <span class="at">rate =</span> lambda)</span>
+<span id="cb7-5"><a aria-hidden="true" tabindex="-1"></a>  u <span class="ot">&lt;-</span> <span class="fu">uniroot</span>(obj, <span class="at">lower =</span> .<span class="dv">001</span>, <span class="at">upper =</span> <span class="fl">10e5</span>, <span class="at">x =</span> x)</span>
+<span id="cb7-6"><a aria-hidden="true" tabindex="-1"></a>  est[i, ] <span class="ot">&lt;-</span> <span class="fu">c</span>(u<span class="sc">$</span>root, u<span class="sc">$</span>root <span class="sc">/</span> <span class="fu">mean</span>(x))</span>
+<span id="cb7-7"><a aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-8"><a aria-hidden="true" tabindex="-1"></a><span class="fu">colMeans</span>(est)              <span class="co"># close to (5, 2)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 5.064 2.028</code></pre>
+</div>
+</div>
+</section>
+<section id="example-14.3-two-dimensional-optimization-with-optim" class="slide level2">
+<h2>Example 14.3: Two-Dimensional Optimization with <code>optim</code></h2>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a aria-hidden="true" tabindex="-1"></a>LL <span class="ot">&lt;-</span> <span class="cf">function</span>(theta, sx, slogx, n) {</span>
+<span id="cb9-2"><a aria-hidden="true" tabindex="-1"></a>  r <span class="ot">&lt;-</span> theta[<span class="dv">1</span>]; lambda <span class="ot">&lt;-</span> theta[<span class="dv">2</span>]</span>
+<span id="cb9-3"><a aria-hidden="true" tabindex="-1"></a>  loglik <span class="ot">&lt;-</span> n <span class="sc">*</span> r <span class="sc">*</span> <span class="fu">log</span>(lambda) <span class="sc">+</span> (r <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> slogx <span class="sc">-</span> lambda <span class="sc">*</span> sx <span class="sc">-</span> n <span class="sc">*</span> <span class="fu">log</span>(<span class="fu">gamma</span>(r))</span>
+<span id="cb9-4"><a aria-hidden="true" tabindex="-1"></a>  <span class="sc">-</span>loglik</span>
+<span id="cb9-5"><a aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-6"><a aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">4750</span>); n <span class="ot">&lt;-</span> <span class="dv">200</span>; x <span class="ot">&lt;-</span> <span class="fu">rgamma</span>(n, <span class="at">shape =</span> <span class="dv">5</span>, <span class="at">rate =</span> <span class="dv">2</span>)</span>
+<span id="cb9-7"><a aria-hidden="true" tabindex="-1"></a><span class="fu">optim</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>), LL, <span class="at">sx =</span> <span class="fu">sum</span>(x), <span class="at">slogx =</span> <span class="fu">sum</span>(<span class="fu">log</span>(x)), <span class="at">n =</span> n)[<span class="fu">c</span>(<span class="st">"par"</span>, <span class="st">"value"</span>, <span class="st">"counts"</span>, <span class="st">"convergence"</span>)]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$par
+[1] 4.670 1.879
+
+$value
+[1] 296.6
+
+$counts
+function gradient 
+      73       NA 
+
+$convergence
+[1] 0</code></pre>
+</div>
+</div>
+<ul>
+<li>Default method is <strong>Nelder-Mead</strong> (no derivatives). Try <code>method = "BFGS"</code> with an analytic gradient:</li>
+</ul>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a aria-hidden="true" tabindex="-1"></a>grLL <span class="ot">&lt;-</span> <span class="cf">function</span>(theta, sx, slogx, n) {</span>
+<span id="cb11-2"><a aria-hidden="true" tabindex="-1"></a>  r <span class="ot">&lt;-</span> theta[<span class="dv">1</span>]; lambda <span class="ot">&lt;-</span> theta[<span class="dv">2</span>]</span>
+<span id="cb11-3"><a aria-hidden="true" tabindex="-1"></a>  <span class="sc">-</span><span class="fu">c</span>(n <span class="sc">*</span> <span class="fu">log</span>(lambda) <span class="sc">+</span> slogx <span class="sc">-</span> n <span class="sc">*</span> <span class="fu">digamma</span>(r), n <span class="sc">*</span> r <span class="sc">/</span> lambda <span class="sc">-</span> sx)</span>
+<span id="cb11-4"><a aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-5"><a aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">optim</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>), LL, grLL, <span class="at">sx =</span> <span class="fu">sum</span>(x), <span class="at">slogx =</span> <span class="fu">sum</span>(<span class="fu">log</span>(x)), <span class="at">n =</span> n, <span class="at">method =</span> <span class="st">"L-BFGS-B"</span>,</span>
+<span id="cb11-6"><a aria-hidden="true" tabindex="-1"></a>             <span class="at">lower =</span> <span class="fu">c</span>(<span class="fl">1e-4</span>, <span class="fl">1e-4</span>), <span class="at">hessian =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-7"><a aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(<span class="at">estimate =</span> fit<span class="sc">$</span>par, <span class="at">se =</span> <span class="fu">sqrt</span>(<span class="fu">diag</span>(<span class="fu">solve</span>(fit<span class="sc">$</span>hessian))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>           [,1]   [,2]
+estimate 4.6701 1.8795
+se       0.4513 0.1918</code></pre>
+</div>
+</div>
+</section>
+<section id="reparametrize-instead-of-constraining" class="slide level2">
+<h2>Reparametrize Instead of Constraining</h2>
+<p><span class="math inline">\(r, \lambda &gt; 0\)</span>: optimize over <span class="math inline">\((\log r, \log\lambda)\in\mathbb{R}^2\)</span>; use <code>lgamma()</code> not <code>log(gamma())</code> (Ch 13!).</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a aria-hidden="true" tabindex="-1"></a>LL2 <span class="ot">&lt;-</span> <span class="cf">function</span>(eta, x) <span class="sc">-</span><span class="fu">sum</span>(<span class="fu">dgamma</span>(x, <span class="at">shape =</span> <span class="fu">exp</span>(eta[<span class="dv">1</span>]), <span class="at">rate =</span> <span class="fu">exp</span>(eta[<span class="dv">2</span>]), <span class="at">log =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb13-2"><a aria-hidden="true" tabindex="-1"></a>fit2 <span class="ot">&lt;-</span> <span class="fu">optim</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>), LL2, <span class="at">x =</span> x, <span class="at">method =</span> <span class="st">"BFGS"</span>)</span>
+<span id="cb13-3"><a aria-hidden="true" tabindex="-1"></a><span class="fu">exp</span>(fit2<span class="sc">$</span>par)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 4.670 1.879</code></pre>
+</div>
+</div>
+<div class="tip">
+<p>Good practice for <code>optim</code>: sensible starting values (MOM!), unconstrained parametrization, analytic gradients when available, check <code>convergence == 0</code>, and try more than one start.</p>
+</div>
+</section>
+<section id="example-14.4-mle-for-a-quadratic-form-a-mixture" class="slide level2">
+<h2>Example 14.4: MLE for a Quadratic Form (a Mixture)</h2>
+<p><span class="math inline">\(Y = \lambda_1X_1^2 + \cdots + \lambda_kX_k^2\)</span> in distribution is an equal mixture of Gamma<span class="math inline">\(\big(\tfrac12, \tfrac1{2\lambda_j}\big)\)</span> (here <span class="math inline">\(k = 3\)</span>, <span class="math inline">\(\sum\lambda_j = 1\)</span>).</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a aria-hidden="true" tabindex="-1"></a>LL <span class="ot">&lt;-</span> <span class="cf">function</span>(lambda, y) {</span>
+<span id="cb15-2"><a aria-hidden="true" tabindex="-1"></a>  lambda3 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">sum</span>(lambda)</span>
+<span id="cb15-3"><a aria-hidden="true" tabindex="-1"></a>  f1 <span class="ot">&lt;-</span> <span class="fu">dgamma</span>(y, <span class="at">shape =</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>, <span class="at">rate =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">2</span> <span class="sc">*</span> lambda[<span class="dv">1</span>]))</span>
+<span id="cb15-4"><a aria-hidden="true" tabindex="-1"></a>  f2 <span class="ot">&lt;-</span> <span class="fu">dgamma</span>(y, <span class="at">shape =</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>, <span class="at">rate =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">2</span> <span class="sc">*</span> lambda[<span class="dv">2</span>]))</span>
+<span id="cb15-5"><a aria-hidden="true" tabindex="-1"></a>  f3 <span class="ot">&lt;-</span> <span class="fu">dgamma</span>(y, <span class="at">shape =</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>, <span class="at">rate =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">2</span> <span class="sc">*</span> lambda3))</span>
+<span id="cb15-6"><a aria-hidden="true" tabindex="-1"></a>  f <span class="ot">&lt;-</span> f1 <span class="sc">/</span> <span class="dv">3</span> <span class="sc">+</span> f2 <span class="sc">/</span> <span class="dv">3</span> <span class="sc">+</span> f3 <span class="sc">/</span> <span class="dv">3</span>        <span class="co"># density of mixture</span></span>
+<span id="cb15-7"><a aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="sc">-</span><span class="fu">sum</span>(<span class="fu">log</span>(f)))                 <span class="co"># returning -loglikelihood</span></span>
+<span id="cb15-8"><a aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb15-9"><a aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">9</span>); m <span class="ot">&lt;-</span> <span class="dv">2000</span></span>
+<span id="cb15-10"><a aria-hidden="true" tabindex="-1"></a>lambda <span class="ot">&lt;-</span> <span class="fu">c</span>(.<span class="dv">6</span>, .<span class="dv">25</span>, .<span class="dv">15</span>)              <span class="co"># rate is 1/(2lambda)</span></span>
+<span id="cb15-11"><a aria-hidden="true" tabindex="-1"></a>lam <span class="ot">&lt;-</span> <span class="fu">sample</span>(lambda, <span class="at">size =</span> <span class="dv">2000</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb15-12"><a aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">rgamma</span>(m, <span class="at">shape =</span> .<span class="dv">5</span>, <span class="at">rate =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">2</span> <span class="sc">*</span> lam))</span>
+<span id="cb15-13"><a aria-hidden="true" tabindex="-1"></a>opt <span class="ot">&lt;-</span> <span class="fu">optim</span>(<span class="fu">c</span>(.<span class="dv">5</span>, .<span class="dv">3</span>), LL, <span class="at">y =</span> y)</span>
+<span id="cb15-14"><a aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(opt<span class="sc">$</span>par, <span class="dv">1</span> <span class="sc">-</span> <span class="fu">sum</span>(opt<span class="sc">$</span>par))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.5890 0.2505 0.1605</code></pre>
+</div>
+</div>
+<ul>
+<li>Next lecture: the <strong>EM algorithm</strong> solves the same problem (Example 14.5) without derivatives.</li>
+</ul>
+</section>
+<section id="simulated-annealing-method-sann" class="slide level2">
+<h2>Simulated Annealing (<code>method = "SANN"</code>)</h2>
+<p>For rough or multimodal objectives, accept “uphill” moves with probability <span class="math inline">\(e^{-\Delta/T}\)</span> and lower the temperature <span class="math inline">\(T\)</span>.</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a aria-hidden="true" tabindex="-1"></a>rough <span class="ot">&lt;-</span> <span class="cf">function</span>(x) (x[<span class="dv">1</span>]<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> x[<span class="dv">2</span>]<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span> <span class="dv">20</span> <span class="sc">-</span> <span class="fu">cos</span>(<span class="dv">3</span> <span class="sc">*</span> x[<span class="dv">1</span>]) <span class="sc">*</span> <span class="fu">cos</span>(<span class="dv">3</span> <span class="sc">*</span> x[<span class="dv">2</span>])   <span class="co"># many local minima</span></span>
+<span id="cb17-2"><a aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">4750</span>)</span>
+<span id="cb17-3"><a aria-hidden="true" tabindex="-1"></a>starts <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">runif</span>(<span class="dv">20</span>, <span class="sc">-</span><span class="dv">4</span>, <span class="dv">4</span>), <span class="dv">10</span>)</span>
+<span id="cb17-4"><a aria-hidden="true" tabindex="-1"></a>bfgs <span class="ot">&lt;-</span> <span class="fu">apply</span>(starts, <span class="dv">1</span>, <span class="cf">function</span>(s) <span class="fu">optim</span>(s, rough, <span class="at">method =</span> <span class="st">"BFGS"</span>)<span class="sc">$</span>value)</span>
+<span id="cb17-5"><a aria-hidden="true" tabindex="-1"></a>sann <span class="ot">&lt;-</span> <span class="fu">apply</span>(starts, <span class="dv">1</span>, <span class="cf">function</span>(s) <span class="fu">optim</span>(s, rough, <span class="at">method =</span> <span class="st">"SANN"</span>, <span class="at">control =</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">5000</span>))<span class="sc">$</span>value)</span>
+<span id="cb17-6"><a aria-hidden="true" tabindex="-1"></a><span class="fu">boxplot</span>(<span class="fu">list</span>(<span class="at">BFGS =</span> bfgs, <span class="at">SANN =</span> sann), <span class="at">horizontal =</span> <span class="cn">TRUE</span>, <span class="at">col =</span> <span class="fu">c</span>(<span class="st">"#88A0C8"</span>, <span class="st">"#FFCC00"</span>),</span>
+<span id="cb17-7"><a aria-hidden="true" tabindex="-1"></a>        <span class="at">main =</span> <span class="st">"Final objective from 10 random starts (global min = -1)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+
+</div>
+<img data-src="./images/18-optimization/unnamed-chunk-10-1.png" class="quarto-figure quarto-figure-center r-stretch" style="width:100.0%"></section></section>
+<section>
+<section id="linear-programming" class="title-slide slide level1 center">
+<h1>Linear Programming</h1>
+
+</section>
+<section id="example-14.6-the-simplex-algorithm" class="slide level2">
+<h2>Example 14.6: The Simplex Algorithm</h2>
+<p>Maximize <span class="math inline">\(2x + 2y + 3z\)</span> subject to <span class="math inline">\(-2x + y + z\le 1\)</span>, <span class="math inline">\(\ 4x - y + 3z\le 3\)</span>, <span class="math inline">\(\ x, y, z\ge 0\)</span>.</p>
+<ul>
+<li>If an optimum exists, it is attained at a <strong>vertex</strong> of the feasible polytope; the simplex method moves from vertex to vertex in the direction of greatest increase.</li>
+</ul>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(boot)</span>
+<span id="cb18-2"><a aria-hidden="true" tabindex="-1"></a>A1 <span class="ot">&lt;-</span> <span class="fu">rbind</span>(<span class="fu">c</span>(<span class="sc">-</span><span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">1</span>), <span class="fu">c</span>(<span class="dv">4</span>, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">3</span>)); b1 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>); a <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>)</span>
+<span id="cb18-3"><a aria-hidden="true" tabindex="-1"></a>s <span class="ot">&lt;-</span> <span class="fu">simplex</span>(<span class="at">a =</span> a, <span class="at">A1 =</span> A1, <span class="at">b1 =</span> b1, <span class="at">maxi =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb18-4"><a aria-hidden="true" tabindex="-1"></a>s<span class="sc">$</span>soln; s<span class="sc">$</span>value</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>x1 x2 x3 
+ 2  5  0 </code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code> b 
+14 </code></pre>
+</div>
+</div>
+<div class="question">
+<p>The solution is <span class="math inline">\((x, y, z) = (2, 5, 0)\)</span> with value 14. Can you verify the two constraints are active?</p>
+</div>
+</section>
+<section id="example-14.7-solving-the-morra-game" class="slide level2">
+<h2>Example 14.7: Solving the Morra Game</h2>
+<p>3-finger Morra: each player shows 1-3 fingers and guesses the opponent’s number; a correct guess wins the total shown. 9 pure strategies; a <strong>zero-sum game</strong> solved by two linear programs (one per player).</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a aria-hidden="true" tabindex="-1"></a>solve.game <span class="ot">&lt;-</span> <span class="cf">function</span>(A) {</span>
+<span id="cb21-2"><a aria-hidden="true" tabindex="-1"></a>  min.A <span class="ot">&lt;-</span> <span class="fu">min</span>(A); A <span class="ot">&lt;-</span> A <span class="sc">-</span> min.A; max.A <span class="ot">&lt;-</span> <span class="fu">max</span>(A); A <span class="ot">&lt;-</span> A <span class="sc">/</span> <span class="fu">max</span>(A)   <span class="co"># so that v &gt;= 0</span></span>
+<span id="cb21-3"><a aria-hidden="true" tabindex="-1"></a>  m <span class="ot">&lt;-</span> <span class="fu">nrow</span>(A); n <span class="ot">&lt;-</span> <span class="fu">ncol</span>(A); it <span class="ot">&lt;-</span> n<span class="sc">^</span><span class="dv">3</span></span>
+<span id="cb21-4"><a aria-hidden="true" tabindex="-1"></a>  a <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">0</span>, m), <span class="dv">1</span>)                          <span class="co"># maximize v for player 1</span></span>
+<span id="cb21-5"><a aria-hidden="true" tabindex="-1"></a>  A1 <span class="ot">&lt;-</span> <span class="sc">-</span><span class="fu">cbind</span>(<span class="fu">t</span>(A), <span class="fu">rep</span>(<span class="sc">-</span><span class="dv">1</span>, n)); b1 <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">0</span>, n)</span>
+<span id="cb21-6"><a aria-hidden="true" tabindex="-1"></a>  A3 <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">as.matrix</span>(<span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">1</span>, m), <span class="dv">0</span>))); b3 <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb21-7"><a aria-hidden="true" tabindex="-1"></a>  sx <span class="ot">&lt;-</span> <span class="fu">simplex</span>(<span class="at">a =</span> a, <span class="at">A1 =</span> A1, <span class="at">b1 =</span> b1, <span class="at">A3 =</span> A3, <span class="at">b3 =</span> b3, <span class="at">maxi =</span> <span class="cn">TRUE</span>, <span class="at">n.iter =</span> it)</span>
+<span id="cb21-8"><a aria-hidden="true" tabindex="-1"></a>  a <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">0</span>, n), <span class="dv">1</span>)                          <span class="co"># minimize v for player 2</span></span>
+<span id="cb21-9"><a aria-hidden="true" tabindex="-1"></a>  A1 <span class="ot">&lt;-</span> <span class="fu">cbind</span>(A, <span class="fu">rep</span>(<span class="sc">-</span><span class="dv">1</span>, m)); b1 <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">0</span>, m)</span>
+<span id="cb21-10"><a aria-hidden="true" tabindex="-1"></a>  A3 <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">as.matrix</span>(<span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">1</span>, n), <span class="dv">0</span>))); b3 <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb21-11"><a aria-hidden="true" tabindex="-1"></a>  sy <span class="ot">&lt;-</span> <span class="fu">simplex</span>(<span class="at">a =</span> a, <span class="at">A1 =</span> A1, <span class="at">b1 =</span> b1, <span class="at">A3 =</span> A3, <span class="at">b3 =</span> b3, <span class="at">maxi =</span> <span class="cn">FALSE</span>, <span class="at">n.iter =</span> it)</span>
+<span id="cb21-12"><a aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="st">"A"</span> <span class="ot">=</span> A <span class="sc">*</span> max.A <span class="sc">+</span> min.A, <span class="st">"x"</span> <span class="ot">=</span> sx<span class="sc">$</span>soln[<span class="dv">1</span><span class="sc">:</span>m], <span class="st">"y"</span> <span class="ot">=</span> sy<span class="sc">$</span>soln[<span class="dv">1</span><span class="sc">:</span>n], <span class="st">"v"</span> <span class="ot">=</span> sx<span class="sc">$</span>soln[m <span class="sc">+</span> <span class="dv">1</span>] <span class="sc">*</span> max.A <span class="sc">+</span> min.A)</span>
+<span id="cb21-13"><a aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb21-14"><a aria-hidden="true" tabindex="-1"></a>A <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">2</span>, <span class="sc">-</span><span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">4</span>, <span class="dv">0</span>, <span class="dv">0</span>,  <span class="dv">2</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="sc">-</span><span class="dv">3</span>, <span class="sc">-</span><span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">0</span>, <span class="dv">0</span>,  <span class="dv">2</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">3</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="sc">-</span><span class="dv">4</span>, <span class="sc">-</span><span class="dv">4</span>,</span>
+<span id="cb21-15"><a aria-hidden="true" tabindex="-1"></a>             <span class="sc">-</span><span class="dv">3</span>, <span class="dv">0</span>, <span class="sc">-</span><span class="dv">3</span>, <span class="dv">0</span>, <span class="dv">4</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">5</span>, <span class="dv">0</span>,  <span class="dv">0</span>, <span class="dv">3</span>, <span class="dv">0</span>, <span class="sc">-</span><span class="dv">4</span>, <span class="dv">0</span>, <span class="sc">-</span><span class="dv">4</span>, <span class="dv">0</span>, <span class="dv">5</span>, <span class="dv">0</span>,  <span class="dv">0</span>, <span class="dv">3</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">4</span>, <span class="dv">0</span>, <span class="sc">-</span><span class="dv">5</span>, <span class="dv">0</span>, <span class="sc">-</span><span class="dv">5</span>,</span>
+<span id="cb21-16"><a aria-hidden="true" tabindex="-1"></a>             <span class="sc">-</span><span class="dv">4</span>, <span class="sc">-</span><span class="dv">4</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">5</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">6</span>,  <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">4</span>, <span class="sc">-</span><span class="dv">5</span>, <span class="sc">-</span><span class="dv">5</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">6</span>,  <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">4</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">5</span>, <span class="sc">-</span><span class="dv">6</span>, <span class="sc">-</span><span class="dv">6</span>, <span class="dv">0</span>), <span class="dv">9</span>, <span class="dv">9</span>)</span>
+<span id="cb21-17"><a aria-hidden="true" tabindex="-1"></a>sol <span class="ot">&lt;-</span> <span class="fu">solve.game</span>(A)</span>
+<span id="cb21-18"><a aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">cbind</span>(<span class="at">player1 =</span> sol<span class="sc">$</span>x, <span class="at">player2 =</span> sol<span class="sc">$</span>y), <span class="dv">7</span>); sol<span class="sc">$</span>v</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   player1 player2
+x1  0.0000  0.0000
+x2  0.0000  0.0000
+x3  0.4098  0.4098
+x4  0.0000  0.0000
+x5  0.3279  0.3279
+x6  0.0000  0.0000
+x7  0.2623  0.2623
+x8  0.0000  0.0000
+x9  0.0000  0.0000</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>x10 
+  0 </code></pre>
+</div>
+</div>
+<aside class="notes">
+<ul>
+<li>The game is symmetric, so its value is 0. The simplex solution puts weight 25/61, 20/61, 16/61 on strategies (1,3), (2,2), (3,1); this is one of the extreme points of the set of optimal strategies discussed in the book.</li>
+</ul>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="python-supplement-scipy.optimize" class="slide level2">
+<h2>Python Supplement: <code>scipy.optimize</code></h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb24-2"><a aria-hidden="true" tabindex="-1"></a><span class="im">from</span> scipy <span class="im">import</span> optimize, special, stats</span>
+<span id="cb24-3"><a aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> stats.gamma(a<span class="op">=</span><span class="dv">5</span>, scale<span class="op">=</span><span class="dv">1</span><span class="op">/</span><span class="dv">2</span>).rvs(size<span class="op">=</span><span class="dv">200</span>, random_state<span class="op">=</span><span class="dv">4750</span>)</span>
+<span id="cb24-4"><a aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> nll(eta):</span>
+<span id="cb24-5"><a aria-hidden="true" tabindex="-1"></a>    r, lam <span class="op">=</span> np.exp(eta)</span>
+<span id="cb24-6"><a aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="op">-</span>np.<span class="bu">sum</span>(stats.gamma.logpdf(x, a<span class="op">=</span>r, scale<span class="op">=</span><span class="dv">1</span><span class="op">/</span>lam))</span>
+<span id="cb24-7"><a aria-hidden="true" tabindex="-1"></a>fit <span class="op">=</span> optimize.minimize(nll, x0<span class="op">=</span>[<span class="dv">0</span>, <span class="dv">0</span>], method<span class="op">=</span><span class="st">"BFGS"</span>)</span>
+<span id="cb24-8"><a aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(np.exp(fit.x))</span>
+<span id="cb24-9"><a aria-hidden="true" tabindex="-1"></a>res <span class="op">=</span> optimize.linprog(c<span class="op">=</span>[<span class="op">-</span><span class="dv">2</span>, <span class="op">-</span><span class="dv">2</span>, <span class="op">-</span><span class="dv">3</span>], A_ub<span class="op">=</span>[[<span class="op">-</span><span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">1</span>], [<span class="dv">4</span>, <span class="op">-</span><span class="dv">1</span>, <span class="dv">3</span>]], b_ub<span class="op">=</span>[<span class="dv">1</span>, <span class="dv">3</span>])   <span class="co"># Example 14.6</span></span>
+<span id="cb24-10"><a aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(res.x, <span class="op">-</span>res.fun)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="summary" class="slide level2">
+<h2>Summary</h2>
+<div class="instructions">
+<ul>
+<li>1-d: <code>optimize()</code> (golden section + parabolic interpolation); roots of the score: <code>uniroot()</code>.</li>
+<li>Multi-d: <code>optim()</code>; Nelder-Mead (default), BFGS/L-BFGS-B with gradients, SANN for rough surfaces.</li>
+<li>Newton is fast near the optimum; gradient methods are cheap per step; quasi-Newton is the usual compromise.</li>
+<li>Reparametrize to remove constraints, use log-scale functions, start from MOM.</li>
+<li>Linear programs (<code>boot::simplex</code>): optima at vertices; zero-sum games.</li>
+</ul>
+</div>
+
+
+</section></section>
+    </div>
+  <div class="quarto-auto-generated-content" style="display: none;">
+<p><img src="logo.png" class="slide-logo"></p>
+<div class="footer footer-default">
+<p><a href="https://mmadoliat.github.io/compstat-s27/">mmadoliat.github.io/compstat-s27</a></p>
+</div>
+</div></div>
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script>
+  <script src="../site_libs/revealjs/dist/reveal.js"></script>
+  <!-- reveal.js plugins -->
+  <script src="../site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.js"></script>
+  <script src="../site_libs/revealjs/plugin/pdf-export/pdfexport.js"></script>
+  <script src="../site_libs/revealjs/plugin/reveal-menu/menu.js"></script>
+  <script src="../site_libs/revealjs/plugin/reveal-menu/quarto-menu.js"></script>
+  <script src="../site_libs/revealjs/plugin/reveal-chalkboard/plugin.js"></script>
+  <script src="../site_libs/revealjs/plugin/quarto-support/support.js"></script>
+  
+
+  <script src="../site_libs/revealjs/plugin/notes/notes.js"></script>
+  <script src="../site_libs/revealjs/plugin/search/search.js"></script>
+  <script src="../site_libs/revealjs/plugin/zoom/zoom.js"></script>
+  <script src="../site_libs/revealjs/plugin/math/math.js"></script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script>
+
+  <script>
+
+      // Full list of configuration options available at:
+      // https://revealjs.com/config/
+      Reveal.initialize({
+'controlsAuto': true,
+'previewLinksAuto': false,
+'pdfSeparateFragments': false,
+'autoAnimateEasing': "ease",
+'autoAnimateDuration': 1,
+'autoAnimateUnmatched': true,
+'jumpToSlide': true,
+'menu': {"side":"left","useTextContentForMissingTitles":true,"markers":false,"loadIcons":false,"custom":[{"title":"Tools","icon":"<i class=\"fas fa-gear\"></i>","content":"<ul class=\"slide-menu-items\">\n<li class=\"slide-tool-item active\" data-item=\"0\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.fullscreen(event)\"><kbd>f</kbd> Fullscreen</a></li>\n<li class=\"slide-tool-item\" data-item=\"1\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.speakerMode(event)\"><kbd>s</kbd> Speaker View</a></li>\n<li class=\"slide-tool-item\" data-item=\"2\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>o</kbd> Slide Overview</a></li>\n<li class=\"slide-tool-item\" data-item=\"3\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.togglePdfExport(event)\"><kbd>e</kbd> PDF Export Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"4\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.toggleScrollView(event)\"><kbd>r</kbd> Scroll View Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"5\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.toggleChalkboard(event)\"><kbd>b</kbd> Toggle Chalkboard</a></li>\n<li class=\"slide-tool-item\" data-item=\"6\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.toggleNotesCanvas(event)\"><kbd>c</kbd> Toggle Notes Canvas</a></li>\n<li class=\"slide-tool-item\" data-item=\"7\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.downloadDrawings(event)\"><kbd>d</kbd> Download Drawings</a></li>\n<li class=\"slide-tool-item\" data-item=\"8\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.keyboardHelp(event)\"><kbd>?</kbd> Keyboard Help</a></li>\n</ul>"}],"openButton":true},
+'chalkboard': {"buttons":true},
+'smaller': false,
+ 
+        // Display controls in the bottom right corner
+        controls: false,
+
+        // Help the user learn the controls by providing hints, for example by
+        // bouncing the down arrow when they first encounter a vertical slide
+        controlsTutorial: false,
+
+        // Determines where controls appear, "edges" or "bottom-right"
+        controlsLayout: 'edges',
+
+        // Visibility rule for backwards navigation arrows; "faded", "hidden"
+        // or "visible"
+        controlsBackArrows: 'faded',
+
+        // Display a presentation progress bar
+        progress: true,
+
+        // Display the page number of the current slide
+        slideNumber: 'c/t',
+
+        // 'all', 'print', or 'speaker'
+        showSlideNumber: 'all',
+
+        // Add the current slide number to the URL hash so that reloading the
+        // page/copying the URL will return you to the same slide
+        hash: true,
+
+        // Start with 1 for the hash rather than 0
+        hashOneBasedIndex: false,
+
+        // Flags if we should monitor the hash and change slides accordingly
+        respondToHashChanges: true,
+
+        // Push each slide change to the browser history
+        history: true,
+
+        // Enable keyboard shortcuts for navigation
+        keyboard: true,
+
+        // Enable the slide overview mode
+        overview: true,
+
+        // Disables the default reveal.js slide layout (scaling and centering)
+        // so that you can use custom CSS layout
+        disableLayout: false,
+
+        // Vertical centering of slides
+        center: false,
+
+        // Enables touch navigation on devices with touch input
+        touch: true,
+
+        // Loop the presentation
+        loop: false,
+
+        // Change the presentation direction to be RTL
+        rtl: false,
+
+        // see https://revealjs.com/vertical-slides/#navigation-mode
+        navigationMode: 'linear',
+
+        // Randomizes the order of slides each time the presentation loads
+        shuffle: false,
+
+        // Turns fragments on and off globally
+        fragments: true,
+
+        // Flags whether to include the current fragment in the URL,
+        // so that reloading brings you to the same fragment position
+        fragmentInURL: false,
+
+        // Flags if the presentation is running in an embedded mode,
+        // i.e. contained within a limited portion of the screen
+        embedded: false,
+
+        // Flags if we should show a help overlay when the questionmark
+        // key is pressed
+        help: true,
+
+        // Flags if it should be possible to pause the presentation (blackout)
+        pause: true,
+
+        // Flags if speaker notes should be visible to all viewers
+        showNotes: false,
+
+        // Global override for autoplaying embedded media (null/true/false)
+        autoPlayMedia: null,
+
+        // Global override for preloading lazy-loaded iframes (null/true/false)
+        preloadIframes: null,
+
+        // Number of milliseconds between automatically proceeding to the
+        // next slide, disabled when set to 0, this value can be overwritten
+        // by using a data-autoslide attribute on your slides
+        autoSlide: 0,
+
+        // Stop auto-sliding after user input
+        autoSlideStoppable: true,
+
+        // Use this method for navigation when auto-sliding
+        autoSlideMethod: null,
+
+        // Specify the average time in seconds that you think you will spend
+        // presenting each slide. This is used to show a pacing timer in the
+        // speaker view
+        defaultTiming: null,
+
+        // Enable slide navigation via mouse wheel
+        mouseWheel: false,
+
+        // The display mode that will be used to show slides
+        display: 'block',
+
+        // Hide cursor if inactive
+        hideInactiveCursor: true,
+
+        // Time before the cursor is hidden (in ms)
+        hideCursorTime: 5000,
+
+        // Opens links in an iframe preview overlay
+        previewLinks: false,
+
+        // Transition style (none/fade/slide/convex/concave/zoom)
+        transition: 'none',
+
+        // Transition speed (default/fast/slow)
+        transitionSpeed: 'default',
+
+        // Transition style for full page slide backgrounds
+        // (none/fade/slide/convex/concave/zoom)
+        backgroundTransition: 'none',
+
+        // Number of slides away from the current that are visible
+        viewDistance: 3,
+
+        // Number of slides away from the current that are visible on mobile
+        // devices. It is advisable to set this to a lower number than
+        // viewDistance in order to save resources.
+        mobileViewDistance: 2,
+
+        // The "normal" size of the presentation, aspect ratio will be preserved
+        // when the presentation is scaled to fit different resolutions. Can be
+        // specified using percentage units.
+        width: 1800,
+
+        height: 1000,
+
+        // Factor of the display size that should remain empty around the content
+        margin: 5.0e-2,
+
+        math: {
+          mathjax: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js',
+          config: 'TeX-AMS_HTML-full',
+          tex2jax: {
+            inlineMath: [['\\(','\\)']],
+            displayMath: [['\\[','\\]']],
+            balanceBraces: true,
+            processEscapes: false,
+            processRefs: true,
+            processEnvironments: true,
+            preview: 'TeX',
+            skipTags: ['script','noscript','style','textarea','pre','code'],
+            ignoreClass: 'tex2jax_ignore',
+            processClass: 'tex2jax_process'
+          },
+        },
+
+        // reveal.js plugins
+        plugins: [QuartoLineHighlight, PdfExport, RevealMenu, RevealChalkboard, QuartoSupport,
+
+          RevealMath,
+          RevealNotes,
+          RevealSearch,
+          RevealZoom
+        ]
+      });
+    </script>
+    <script id="quarto-html-after-body" type="application/javascript">
+      window.document.addEventListener("DOMContentLoaded", function (event) {
+        const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+        tabsets.forEach(function(tabset) {
+          const tabby = new Tabby('#' + tabset.id);
+        });
+        const isCodeAnnotation = (el) => {
+          for (const clz of el.classList) {
+            if (clz.startsWith('code-annotation-')) {                     
+              return true;
+            }
+          }
+          return false;
+        }
+        const onCopySuccess = function(e) {
+          // button target
+          const button = e.trigger;
+          // don't keep focus
+          button.blur();
+          // flash "checked"
+          button.classList.add('code-copy-button-checked');
+          var currentTitle = button.getAttribute("title");
+          button.setAttribute("title", "Copied!");
+          let tooltip;
+          if (window.bootstrap) {
+            button.setAttribute("data-bs-toggle", "tooltip");
+            button.setAttribute("data-bs-placement", "left");
+            button.setAttribute("data-bs-title", "Copied!");
+            tooltip = new bootstrap.Tooltip(button, 
+              { trigger: "manual", 
+                customClass: "code-copy-button-tooltip",
+                offset: [0, -8]});
+            tooltip.show();    
+          }
+          setTimeout(function() {
+            if (tooltip) {
+              tooltip.hide();
+              button.removeAttribute("data-bs-title");
+              button.removeAttribute("data-bs-toggle");
+              button.removeAttribute("data-bs-placement");
+            }
+            button.setAttribute("title", currentTitle);
+            button.classList.remove('code-copy-button-checked');
+          }, 1000);
+          // clear code selection
+          e.clearSelection();
+        }
+        const getTextToCopy = function(trigger) {
+          const outerScaffold = trigger.parentElement.cloneNode(true);
+          const codeEl = outerScaffold.querySelector('code');
+          for (const childEl of codeEl.children) {
+            if (isCodeAnnotation(childEl)) {
+              childEl.remove();
+            }
+          }
+          return codeEl.innerText;
+        }
+        const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+          text: getTextToCopy
+        });
+        clipboard.on('success', onCopySuccess);
+        if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+          const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+            text: getTextToCopy,
+            container: window.document.getElementById('quarto-embedded-source-code-modal')
+          });
+          clipboardModal.on('success', onCopySuccess);
+        }
+          var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+          var mailtoRegex = new RegExp(/^mailto:/);
+            var filterRegex = new RegExp("https:\/\/mmadoliat\.github\.io\/compstat-s27\/");
+          var isInternal = (href) => {
+              return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+          }
+          // Inspect non-navigation links and adorn them if external
+         var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+          for (var i=0; i<links.length; i++) {
+            const link = links[i];
+            if (!isInternal(link.href)) {
+              // undo the damage that might have been done by quarto-nav.js in the case of
+              // links that we want to consider external
+              if (link.dataset.originalHref !== undefined) {
+                link.href = link.dataset.originalHref;
+              }
+            }
+          }
+        function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+          const config = {
+            allowHTML: true,
+            maxWidth: 500,
+            delay: 100,
+            arrow: false,
+            appendTo: function(el) {
+                return el.closest('section.slide') || el.parentElement;
+            },
+            interactive: true,
+            interactiveBorder: 10,
+            theme: 'light-border',
+            placement: 'bottom-start',
+          };
+          if (contentFn) {
+            config.content = contentFn;
+          }
+          if (onTriggerFn) {
+            config.onTrigger = onTriggerFn;
+          }
+          if (onUntriggerFn) {
+            config.onUntrigger = onUntriggerFn;
+          }
+            config['offset'] = [0,0];
+            config['maxWidth'] = 700;
+          window.tippy(el, config); 
+        }
+        const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+        for (var i=0; i<noterefs.length; i++) {
+          const ref = noterefs[i];
+          tippyHover(ref, function() {
+            // use id or data attribute instead here
+            let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+            try { href = new URL(href).hash; } catch {}
+            const id = href.replace(/^#\/?/, "");
+            const note = window.document.getElementById(id);
+            if (note) {
+              return note.innerHTML;
+            } else {
+              return "";
+            }
+          });
+        }
+        const findCites = (el) => {
+          const parentEl = el.parentElement;
+          if (parentEl) {
+            const cites = parentEl.dataset.cites;
+            if (cites) {
+              return {
+                el,
+                cites: cites.split(' ')
+              };
+            } else {
+              return findCites(el.parentElement)
+            }
+          } else {
+            return undefined;
+          }
+        };
+        var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+        for (var i=0; i<bibliorefs.length; i++) {
+          const ref = bibliorefs[i];
+          const citeInfo = findCites(ref);
+          if (citeInfo) {
+            tippyHover(citeInfo.el, function() {
+              var popup = window.document.createElement('div');
+              citeInfo.cites.forEach(function(cite) {
+                var citeDiv = window.document.createElement('div');
+                citeDiv.classList.add('hanging-indent');
+                citeDiv.classList.add('csl-entry');
+                var biblioDiv = window.document.getElementById('ref-' + cite);
+                if (biblioDiv) {
+                  citeDiv.innerHTML = biblioDiv.innerHTML;
+                }
+                popup.appendChild(citeDiv);
+              });
+              return popup.innerHTML;
+            });
+          }
+        }
+      });
+      </script>
+    
+
+</body></html>

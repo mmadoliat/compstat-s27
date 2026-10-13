@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles"><meta charset="utf-8">
+  <meta name="generator" content="quarto-1.10.18">
+
+  <meta name="author" content="Dr.&nbsp;Mehdi Maadooliat">
+  <title>MATH 4750 (MSSC 5750) – Monte Carlo Methods in Inference 🧪</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+  <link rel="stylesheet" href="../site_libs/revealjs/dist/reset.css">
+  <link rel="stylesheet" href="../site_libs/revealjs/dist/reveal.css">
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      { color: #003b4f; background-color: #f1f3f5; }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span { color: #003b4f; } /* Normal */
+    code span.al { color: #ad0000; } /* Alert */
+    code span.an { color: #5e5e5e; } /* Annotation */
+    code span.at { color: #657422; } /* Attribute */
+    code span.bn { color: #ad0000; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #003b4f; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #20794d; } /* Char */
+    code span.cn { color: #8f5902; } /* Constant */
+    code span.co { color: #5e5e5e; } /* Comment */
+    code span.cv { color: #5e5e5e; font-style: italic; } /* CommentVar */
+    code span.do { color: #5e5e5e; font-style: italic; } /* Documentation */
+    code span.dt { color: #ad0000; } /* DataType */
+    code span.dv { color: #ad0000; } /* DecVal */
+    code span.er { color: #ad0000; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #ad0000; } /* Float */
+    code span.fu { color: #4758ab; } /* Function */
+    code span.im { color: #00769e; } /* Import */
+    code span.in { color: #5e5e5e; } /* Information */
+    code span.kw { color: #003b4f; font-weight: bold; } /* Keyword */
+    code span.op { color: #5e5e5e; } /* Operator */
+    code span.ot { color: #003b4f; } /* Other */
+    code span.pp { color: #ad0000; } /* Preprocessor */
+    code span.sc { color: #5e5e5e; } /* SpecialChar */
+    code span.ss { color: #20794d; } /* SpecialString */
+    code span.st { color: #20794d; } /* String */
+    code span.va { color: #111111; } /* Variable */
+    code span.vs { color: #20794d; } /* VerbatimString */
+    code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../site_libs/revealjs/dist/theme/quarto-aa3c25cd00179041a18f150a91e83d28.css">
+  <link href="../site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
+  <link href="../site_libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
+  <link href="../site_libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
+  <link href="../site_libs/revealjs/plugin/reveal-chalkboard/font-awesome/css/all.css" rel="stylesheet">
+  <link href="../site_libs/revealjs/plugin/reveal-chalkboard/style.css" rel="stylesheet">
+  <link href="../site_libs/revealjs/plugin/quarto-support/footer.css" rel="stylesheet">
+  <style type="text/css">
+    .reveal div.sourceCode {
+      margin: 0;
+      overflow: auto;
+    }
+    .reveal div.hanging-indent {
+      margin-left: 1em;
+      text-indent: -1em;
+    }
+    .reveal .slide:not(.center) {
+      height: 100%;
+    }
+    .reveal .slide.scrollable {
+      overflow-y: auto;
+    }
+    .reveal .footnotes {
+      height: 100%;
+      overflow-y: auto;
+    }
+    .reveal .slide .absolute {
+      position: absolute;
+      display: block;
+    }
+    .reveal .footnotes ol {
+      counter-reset: ol;
+      list-style-type: none; 
+      margin-left: 0;
+    }
+    .reveal .footnotes ol li:before {
+      counter-increment: ol;
+      content: counter(ol) ". "; 
+    }
+    .reveal .footnotes ol li > p:first-child {
+      display: inline-block;
+    }
+    .reveal .slide ul,
+    .reveal .slide ol {
+      margin-bottom: 0.5em;
+    }
+    .reveal .slide ul li,
+    .reveal .slide ol li {
+      margin-top: 0.4em;
+      margin-bottom: 0.2em;
+    }
+    .reveal .slide ul[role="tablist"] li {
+      margin-bottom: 0;
+    }
+    .reveal .slide ul li > *:first-child,
+    .reveal .slide ol li > *:first-child {
+      margin-block-start: 0;
+    }
+    .reveal .slide ul li > *:last-child,
+    .reveal .slide ol li > *:last-child {
+      margin-block-end: 0;
+    }
+    .reveal .slide .columns:nth-child(3) {
+      margin-block-start: 0.8em;
+    }
+    .reveal blockquote {
+      box-shadow: none;
+    }
+    .reveal .tippy-content>* {
+      margin-top: 0.2em;
+      margin-bottom: 0.7em;
+    }
+    .reveal .tippy-content>*:last-child {
+      margin-bottom: 0.2em;
+    }
+    .reveal .slide > img.stretch.quarto-figure-center,
+    .reveal .slide > img.r-stretch.quarto-figure-center {
+      display: block;
+      margin-left: auto;
+      margin-right: auto; 
+    }
+    .reveal .slide > img.stretch.quarto-figure-left,
+    .reveal .slide > img.r-stretch.quarto-figure-left  {
+      display: block;
+      margin-left: 0;
+      margin-right: auto; 
+    }
+    .reveal .slide > img.stretch.quarto-figure-right,
+    .reveal .slide > img.r-stretch.quarto-figure-right  {
+      display: block;
+      margin-left: auto;
+      margin-right: 0; 
+    }
+  </style>
+<meta property="og:title" content="Monte Carlo Methods in Inference 🧪 – MATH 4750 (MSSC 5750)">
+<meta property="og:description" content="MATH 4750 / MSSC 5750 Computational Statistics">
+<meta property="og:site_name" content="MATH 4750 (MSSC 5750)">
+<meta name="twitter:title" content="Monte Carlo Methods in Inference 🧪 – MATH 4750 (MSSC 5750)">
+<meta name="twitter:description" content="MATH 4750 / MSSC 5750 Computational Statistics">
+<meta name="twitter:image" content="https://mmadoliat.github.io/compstat-s27/slides/images/twitter-card.png">
+<meta name="twitter:creator" content="@mmadoliat">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body class="quarto-light">
+  <div class="reveal">
+    <div class="slides">
+
+<section id="title-slide" data-background-image="mu-bg.png" data-background-size="stretch" data-slide-number="none" class="quarto-title-block center">
+  <h1 class="title">Monte Carlo Methods in Inference 🧪</h1>
+  <p class="subtitle">MATH 4750 / MSSC 5750 Computational Statistics</p>
+
+<div class="quarto-title-authors">
+<div class="quarto-title-author">
+<div class="quarto-title-author-name">
+Dr.&nbsp;Mehdi Maadooliat
+</div>
+        <p class="quarto-title-affiliation">
+            Marquette University <br> MATH 4750 - Spring 2027
+          </p>
+    </div>
+</div>
+
+</section>
+
+
+<section id="monte-carlo-methods-in-inference" class="title-slide slide level1 center">
+<h1>Monte Carlo Methods in Inference</h1>
+<h2>
+Lecture A: Monte Carlo estimation, standard errors, MSE, confidence levels
+</h2>
+<h2>
+Lecture B: hypothesis testing review, Type I error, power, sample size, Count Five test
+</h2>
+<aside class="notes">
+<ul>
+<li>Rizzo Chapter 7 plus the hypothesis-testing review notes (Chapt7-Hyp-Test). Lecture A ends after the empirical confidence level; Lecture B starts with the testing framework.</li>
+</ul>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+
+<section>
+<section id="part-a" class="title-slide slide level1 center">
+<h1>Lecture A: Monte Carlo Methods for Estimation</h1>
+
+</section>
+<section id="what-is-a-monte-carlo-method-in-inference" class="slide level2">
+<h2>What Is a Monte Carlo Method in Inference?</h2>
+<ul>
+<li>Chapter 6 used simulation to compute <strong>integrals</strong>. Here we use simulation to study <strong>statistical procedures</strong>:
+<ul>
+<li>What is the bias / standard error / MSE of an estimator?</li>
+<li>What is the true coverage of a confidence interval?</li>
+<li>What is the Type I error rate or power of a test?</li>
+<li>Which of two procedures is better, and when?</li>
+</ul></li>
+<li>Parametric bootstrap flavor: we simulate from a <strong>known</strong> model, repeat the procedure many times, and summarize.</li>
+</ul>
+<div class="algo">
+<ol type="1">
+<li>For <span class="math inline">\(j = 1,\dots,m\)</span>: generate a sample <span class="math inline">\(x^{(j)}\)</span> from the model; compute the statistic/decision <span class="math inline">\(\hat\theta^{(j)}\)</span>.</li>
+<li>Summarize the replicates <span class="math inline">\(\hat\theta^{(1)},\dots,\hat\theta^{(m)}\)</span> (mean, sd, proportion, quantiles).</li>
+</ol>
+</div>
+</section>
+<section id="example-7.1-basic-monte-carlo-estimation" class="slide level2">
+<h2>Example 7.1: Basic Monte Carlo Estimation</h2>
+<p><span class="math inline">\(X_1, X_2\stackrel{\text{iid}}{\sim}N(0,1)\)</span>. Estimate <span class="math inline">\(\theta = \mathrm{E}|X_1 - X_2|\)</span> (exact value <span class="math inline">\(2/\sqrt\pi\)</span>).</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">4750</span>)</span>
+<span id="cb1-2"><a aria-hidden="true" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
+<span id="cb1-3"><a aria-hidden="true" tabindex="-1"></a>g <span class="ot">&lt;-</span> <span class="fu">numeric</span>(m)</span>
+<span id="cb1-4"><a aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>m) {</span>
+<span id="cb1-5"><a aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">2</span>)</span>
+<span id="cb1-6"><a aria-hidden="true" tabindex="-1"></a>  g[i] <span class="ot">&lt;-</span> <span class="fu">abs</span>(x[<span class="dv">1</span>] <span class="sc">-</span> x[<span class="dv">2</span>])</span>
+<span id="cb1-7"><a aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-8"><a aria-hidden="true" tabindex="-1"></a>est <span class="ot">&lt;-</span> <span class="fu">mean</span>(g)</span>
+<span id="cb1-9"><a aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">estimate =</span> est, <span class="at">exact =</span> <span class="dv">2</span> <span class="sc">/</span> <span class="fu">sqrt</span>(pi), <span class="at">se =</span> <span class="fu">sqrt</span>(<span class="fu">sum</span>((g <span class="sc">-</span> <span class="fu">mean</span>(g))<span class="sc">^</span><span class="dv">2</span>)) <span class="sc">/</span> m)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>estimate    exact       se 
+ 1.13620  1.12838  0.02741 </code></pre>
+</div>
+</div>
+<ul>
+<li>The standard error of a sample mean of <span class="math inline">\(m\)</span> replicates is <span class="math inline">\(\widehat{\mathrm{se}} = \frac1m\sqrt{\sum_j(g_j - \bar g)^2}\)</span>.</li>
+</ul>
+</section>
+<section id="example-7.2-mse-of-a-trimmed-mean" class="slide level2">
+<h2>Example 7.2: MSE of a Trimmed Mean</h2>
+<p>The <span class="math inline">\(k\)</span>th level trimmed mean <span class="math inline">\(\bar X_{[-k]} = \frac{1}{n-2k}\sum_{i=k+1}^{n-k}X_{(i)}\)</span>. Estimate its MSE when sampling from <span class="math inline">\(N(0,1)\)</span> (<span class="math inline">\(\theta = 0\)</span>):</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">20</span>; m <span class="ot">&lt;-</span> <span class="dv">1000</span>; <span class="fu">set.seed</span>(<span class="dv">4750</span>)</span>
+<span id="cb3-2"><a aria-hidden="true" tabindex="-1"></a>tmean <span class="ot">&lt;-</span> <span class="fu">numeric</span>(m)</span>
+<span id="cb3-3"><a aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>m) {</span>
+<span id="cb3-4"><a aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">rnorm</span>(n))</span>
+<span id="cb3-5"><a aria-hidden="true" tabindex="-1"></a>  tmean[i] <span class="ot">&lt;-</span> <span class="fu">sum</span>(x[<span class="dv">2</span><span class="sc">:</span>(n <span class="sc">-</span> <span class="dv">1</span>)]) <span class="sc">/</span> (n <span class="sc">-</span> <span class="dv">2</span>)</span>
+<span id="cb3-6"><a aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-7"><a aria-hidden="true" tabindex="-1"></a>mse <span class="ot">&lt;-</span> <span class="fu">mean</span>(tmean<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb3-8"><a aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">mse =</span> mse, <span class="at">se =</span> <span class="fu">sqrt</span>(<span class="fu">sum</span>((tmean <span class="sc">-</span> <span class="fu">mean</span>(tmean))<span class="sc">^</span><span class="dv">2</span>)) <span class="sc">/</span> m)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     mse       se 
+0.052815 0.007264 </code></pre>
+</div>
+</div>
+</section>
+<section id="example-7.3-trimmed-mean-under-contamination" class="slide level2">
+<h2>Example 7.3: Trimmed Mean Under Contamination</h2>
+<p>Compare MSE for all trimming levels under <span class="math inline">\(N(0,1)\)</span> and the contaminated normal <span class="math inline">\(0.9\,N(0,1) + 0.1\,N(0,100)\)</span>.</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">522</span>); n <span class="ot">&lt;-</span> <span class="dv">20</span>; K <span class="ot">&lt;-</span> n <span class="sc">/</span> <span class="dv">2</span> <span class="sc">-</span> <span class="dv">1</span>; m <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
+<span id="cb5-2"><a aria-hidden="true" tabindex="-1"></a>mse <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, n <span class="sc">/</span> <span class="dv">2</span>, <span class="dv">6</span>)</span>
+<span id="cb5-3"><a aria-hidden="true" tabindex="-1"></a>trimmed.mse <span class="ot">&lt;-</span> <span class="cf">function</span>(n, m, k, p) {</span>
+<span id="cb5-4"><a aria-hidden="true" tabindex="-1"></a>  tmean <span class="ot">&lt;-</span> <span class="fu">numeric</span>(m)</span>
+<span id="cb5-5"><a aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>m) {</span>
+<span id="cb5-6"><a aria-hidden="true" tabindex="-1"></a>    sigma <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">10</span>), <span class="at">size =</span> n, <span class="at">replace =</span> <span class="cn">TRUE</span>, <span class="at">prob =</span> <span class="fu">c</span>(p, <span class="dv">1</span> <span class="sc">-</span> p))</span>
+<span id="cb5-7"><a aria-hidden="true" tabindex="-1"></a>    x <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">rnorm</span>(n, <span class="dv">0</span>, sigma))</span>
+<span id="cb5-8"><a aria-hidden="true" tabindex="-1"></a>    tmean[i] <span class="ot">&lt;-</span> <span class="fu">sum</span>(x[(k <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span>(n <span class="sc">-</span> k)]) <span class="sc">/</span> (n <span class="sc">-</span> <span class="dv">2</span> <span class="sc">*</span> k)</span>
+<span id="cb5-9"><a aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb5-10"><a aria-hidden="true" tabindex="-1"></a>  mse.est <span class="ot">&lt;-</span> <span class="fu">mean</span>(tmean<span class="sc">^</span><span class="dv">2</span>); se.mse <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">mean</span>((tmean <span class="sc">-</span> <span class="fu">mean</span>(tmean))<span class="sc">^</span><span class="dv">2</span>)) <span class="sc">/</span> <span class="fu">sqrt</span>(m)</span>
+<span id="cb5-11"><a aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(mse.est, se.mse)</span>
+<span id="cb5-12"><a aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-13"><a aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">0</span><span class="sc">:</span>K) {</span>
+<span id="cb5-14"><a aria-hidden="true" tabindex="-1"></a>  mse[k <span class="sc">+</span> <span class="dv">1</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="fu">trimmed.mse</span>(<span class="at">n =</span> n, <span class="at">m =</span> m, <span class="at">k =</span> k, <span class="at">p =</span> <span class="fl">1.0</span>)</span>
+<span id="cb5-15"><a aria-hidden="true" tabindex="-1"></a>  mse[k <span class="sc">+</span> <span class="dv">1</span>, <span class="dv">3</span><span class="sc">:</span><span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="fu">trimmed.mse</span>(<span class="at">n =</span> n, <span class="at">m =</span> m, <span class="at">k =</span> k, <span class="at">p =</span> .<span class="dv">95</span>)</span>
+<span id="cb5-16"><a aria-hidden="true" tabindex="-1"></a>  mse[k <span class="sc">+</span> <span class="dv">1</span>, <span class="dv">5</span><span class="sc">:</span><span class="dv">6</span>] <span class="ot">&lt;-</span> <span class="fu">trimmed.mse</span>(<span class="at">n =</span> n, <span class="at">m =</span> m, <span class="at">k =</span> k, <span class="at">p =</span> .<span class="dv">9</span>)</span>
+<span id="cb5-17"><a aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-18"><a aria-hidden="true" tabindex="-1"></a><span class="fu">matplot</span>(<span class="dv">0</span><span class="sc">:</span>K, n <span class="sc">*</span> mse[, <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">5</span>)], <span class="at">type =</span> <span class="st">"b"</span>, <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">lty =</span> <span class="dv">1</span>, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">col =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="st">"#2E5BBA"</span>, <span class="st">"#C0392B"</span>),</span>
+<span id="cb5-19"><a aria-hidden="true" tabindex="-1"></a>        <span class="at">xlab =</span> <span class="st">"k (k = 9 is the median)"</span>, <span class="at">ylab =</span> <span class="st">"n x MSE"</span>, <span class="at">log =</span> <span class="st">"y"</span>)</span>
+<span id="cb5-20"><a aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">"topright"</span>, <span class="fu">c</span>(<span class="st">"p = 1 (normal)"</span>, <span class="st">"p = .95"</span>, <span class="st">"p = .90"</span>), <span class="at">col =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="st">"#2E5BBA"</span>, <span class="st">"#C0392B"</span>), <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">bty =</span> <span class="st">"n"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+
+</div>
+<img data-src="./images/13-mc-inference/unnamed-chunk-4-1.png" class="quarto-figure quarto-figure-center r-stretch" style="width:100.0%"><aside class="notes">
+<ul>
+<li>Under the normal model the untrimmed mean (k = 0) is best; under contamination moderate trimming wins by a lot. The median (k = 9) is a robust compromise.</li>
+</ul>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="example-7.4-confidence-interval-for-a-variance" class="slide level2">
+<h2>Example 7.4: Confidence Interval for a Variance</h2>
+<p>For a normal sample, <span class="math inline">\((n-1)S^2/\sigma^2\sim\chi^2(n-1)\)</span>, so a one-sided 95% <strong>upper confidence limit</strong> is <span class="math inline">\((n-1)S^2/\chi^2_\alpha\)</span>.</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">20</span>; alpha <span class="ot">&lt;-</span> .<span class="dv">05</span>; <span class="fu">set.seed</span>(<span class="dv">4750</span>)</span>
+<span id="cb6-2"><a aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n, <span class="at">mean =</span> <span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">2</span>)</span>
+<span id="cb6-3"><a aria-hidden="true" tabindex="-1"></a>UCL <span class="ot">&lt;-</span> (n <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="fu">var</span>(x) <span class="sc">/</span> <span class="fu">qchisq</span>(alpha, <span class="at">df =</span> n <span class="sc">-</span> <span class="dv">1</span>)</span>
+<span id="cb6-4"><a aria-hidden="true" tabindex="-1"></a>UCL                          <span class="co"># should cover sigma^2 = 4 about 95% of the time</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 6.403</code></pre>
+</div>
+</div>
+</section>
+<section id="examples-7.5---7.6-empirical-confidence-level" class="slide level2">
+<h2>Examples 7.5 - 7.6: Empirical Confidence Level</h2>
+<div class="algo">
+<ol type="1">
+<li>For <span class="math inline">\(j = 1,\dots,m\)</span>: generate a sample, compute the interval <span class="math inline">\(C_j\)</span>, and set <span class="math inline">\(y_j = I(\theta\in C_j)\)</span>.</li>
+<li>The empirical confidence level is <span class="math inline">\(\bar y = \frac1m\sum y_j\)</span>.</li>
+</ol>
+</div>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">20</span>; alpha <span class="ot">&lt;-</span> .<span class="dv">05</span>; <span class="fu">set.seed</span>(<span class="dv">4750</span>)</span>
+<span id="cb8-2"><a aria-hidden="true" tabindex="-1"></a>calcCI <span class="ot">&lt;-</span> <span class="cf">function</span>(n, alpha) { y <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n, <span class="at">mean =</span> <span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">2</span>); (n <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="fu">var</span>(y) <span class="sc">/</span> <span class="fu">qchisq</span>(alpha, <span class="at">df =</span> n <span class="sc">-</span> <span class="dv">1</span>) }</span>
+<span id="cb8-3"><a aria-hidden="true" tabindex="-1"></a>UCL <span class="ot">&lt;-</span> <span class="fu">replicate</span>(<span class="dv">1000</span>, <span class="at">expr =</span> <span class="fu">calcCI</span>(<span class="at">n =</span> n, <span class="at">alpha =</span> alpha))</span>
+<span id="cb8-4"><a aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(UCL <span class="sc">&gt;</span> <span class="dv">4</span>)                                 <span class="co"># normal data: OK</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.953</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a aria-hidden="true" tabindex="-1"></a>UCL2 <span class="ot">&lt;-</span> <span class="fu">replicate</span>(<span class="dv">1000</span>, <span class="at">expr =</span> { x <span class="ot">&lt;-</span> <span class="fu">rchisq</span>(n, <span class="at">df =</span> <span class="dv">2</span>); (n <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="fu">var</span>(x) <span class="sc">/</span> <span class="fu">qchisq</span>(alpha, <span class="at">df =</span> n <span class="sc">-</span> <span class="dv">1</span>) })</span>
+<span id="cb10-2"><a aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(UCL2 <span class="sc">&gt;</span> <span class="dv">4</span>)                                <span class="co"># chi^2(2) data, variance 4: badly below 95%!</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.799</code></pre>
+</div>
+</div>
+<div class="danger">
+<p>The <span class="math inline">\(\chi^2\)</span> interval for <span class="math inline">\(\sigma^2\)</span> is <strong>not robust</strong> to departures from normality. A <span class="math inline">\(t\)</span> interval for <span class="math inline">\(\mu\)</span> is much more robust (try it: Exercise 7.A).</p>
+</div>
+</section></section>
+<section>
+<section id="part-b" class="title-slide slide level1 center">
+<h1>Lecture B: Monte Carlo Methods for Hypothesis Tests</h1>
+
+</section>
+<section id="hypothesis-testing-a-general-framework" class="slide level2">
+<h2>Hypothesis Testing: A General Framework</h2>
+<p>Hypothesis testing is the most used methodology of statistics:</p>
+<ol type="1">
+<li>Build or assume a <strong>statistical model</strong> for the data.</li>
+<li>Write the hypothesis of interest in terms of the <strong>parameters</strong> of the model.</li>
+<li>Use a <strong>decision rule</strong> (that controls the rate of false discovery) to draw a conclusion.</li>
+</ol>
+<p><strong>Elements:</strong> (1) null hypothesis <span class="math inline">\(H_0\)</span>; (2) alternative (research) hypothesis <span class="math inline">\(H_a\)</span>; (3) test statistic; (4) decision rule (rejection region); (5) conclusion.</p>
+</section>
+<section id="example-the-courtroom" class="slide level2">
+<h2>Example: The Courtroom</h2>
+<ul>
+<li><span class="math inline">\(H_0\)</span>: the person is innocent; <span class="math inline">\(H_a\)</span>: the person is guilty</li>
+<li>Test statistic: the evidence; decision rule: the jury’s decision</li>
+<li>Conclusion: “guilty” <strong>or</strong> “not enough evidence to convict” (never “innocent”!)</li>
+</ul>
+</section>
+<section id="example-does-the-diet-work" class="slide level2">
+<h2>Example: Does the Diet Work?</h2>
+<p>25 subjects on a new diet, 25 on placebo for eight weeks; count how many lost weight.</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th></th>
+<th>Placebo</th>
+<th>New diet</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\(n\)</span></td>
+<td>25</td>
+<td>25</td>
+</tr>
+<tr class="even">
+<td>lost weight</td>
+<td>4</td>
+<td>6</td>
+</tr>
+</tbody>
+</table>
+<p><span class="math inline">\(X_1\sim\text{Bin}(25,\pi_1)\)</span>, <span class="math inline">\(X_2\sim\text{Bin}(25,\pi_2)\)</span>; <span class="math inline">\(H_0:\pi_1 = \pi_2\)</span> vs.&nbsp;<span class="math inline">\(H_a:\pi_1 &lt; \pi_2\)</span>.</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a aria-hidden="true" tabindex="-1"></a><span class="fu">prop.test</span>(<span class="fu">c</span>(<span class="dv">6</span>, <span class="dv">4</span>), <span class="fu">c</span>(<span class="dv">25</span>, <span class="dv">25</span>), <span class="at">alternative =</span> <span class="st">"greater"</span>, <span class="at">correct =</span> <span class="cn">FALSE</span>)<span class="sc">$</span>p.value</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.2398</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a aria-hidden="true" tabindex="-1"></a><span class="fu">fisher.test</span>(<span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">6</span>, <span class="dv">19</span>, <span class="dv">4</span>, <span class="dv">21</span>), <span class="dv">2</span>), <span class="at">alternative =</span> <span class="st">"greater"</span>)<span class="sc">$</span>p.value</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.3626</code></pre>
+</div>
+</div>
+</section>
+<section id="types-of-error" class="slide level2">
+<h2>Types of Error</h2>
+<table class="caption-top">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th><span class="math inline">\(H_0\)</span> true</th>
+<th><span class="math inline">\(H_a\)</span> true</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Reject <span class="math inline">\(H_0\)</span></td>
+<td><strong>Type I error</strong> (<span class="math inline">\(\alpha\)</span>)</td>
+<td>correct (power <span class="math inline">\(1-\beta\)</span>)</td>
+</tr>
+<tr class="even">
+<td>Do not reject <span class="math inline">\(H_0\)</span></td>
+<td>correct</td>
+<td><strong>Type II error</strong> (<span class="math inline">\(\beta\)</span>)</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><span class="math inline">\(\alpha = P(\text{falsely reject } H_0)\)</span>, chosen beforehand (0.10, 0.05, 0.01, 0.001).</li>
+<li><span class="math inline">\(\beta = P(\text{falsely accept } H_0)\)</span> can be very large.</li>
+<li>We cannot make both small with a fixed <span class="math inline">\(n\)</span>; too small an <span class="math inline">\(\alpha\)</span> means no discoveries.</li>
+</ul>
+</section>
+<section id="testing-a-mean-the-z-test" class="slide level2">
+<h2>Testing a Mean: The <span class="math inline">\(z\)</span> Test</h2>
+<p><span class="math display">\[
+z = \frac{\bar y - \mu_0}{\sigma/\sqrt n}\qquad
+\begin{cases}
+H_a:\mu&gt;\mu_0: &amp; \text{reject if } z &gt; z_\alpha\\
+H_a:\mu&lt;\mu_0: &amp; \text{reject if } z &lt; -z_\alpha\\
+H_a:\mu\neq\mu_0: &amp; \text{reject if } |z| &gt; z_{\alpha/2}
+\end{cases}
+\]</span></p>
+<p>Assumes <span class="math inline">\(\sigma\)</span> known and <span class="math inline">\(n\ge 30\)</span> or a normal population.</p>
+<p><strong>Blood pressure:</strong> <span class="math inline">\(n = 100\)</span>, <span class="math inline">\(\bar y = 121.5\)</span>, <span class="math inline">\(\sigma = 5\)</span>, <span class="math inline">\(H_0:\mu = 120\)</span> vs <span class="math inline">\(H_a:\mu &gt; 120\)</span>.</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a aria-hidden="true" tabindex="-1"></a>z <span class="ot">&lt;-</span> (<span class="fl">121.5</span> <span class="sc">-</span> <span class="dv">120</span>) <span class="sc">/</span> (<span class="dv">5</span> <span class="sc">/</span> <span class="fu">sqrt</span>(<span class="dv">100</span>)); <span class="fu">c</span>(<span class="at">z =</span> z, <span class="at">critical =</span> <span class="fu">qnorm</span>(.<span class="dv">95</span>), <span class="at">p_value =</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">pnorm</span>(z))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       z critical  p_value 
+ 3.00000  1.64485  0.00135 </code></pre>
+</div>
+</div>
+<p><strong>Anti-bacterial soap:</strong> <span class="math inline">\(n = 35\)</span>, <span class="math inline">\(\bar y = 31.2\)</span>, <span class="math inline">\(s = 8.4\)</span>, <span class="math inline">\(H_0:\mu = 33\)</span> vs <span class="math inline">\(H_a:\mu&lt;33\)</span>.</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a aria-hidden="true" tabindex="-1"></a>z <span class="ot">&lt;-</span> (<span class="fl">31.2</span> <span class="sc">-</span> <span class="dv">33</span>) <span class="sc">/</span> (<span class="fl">8.4</span> <span class="sc">/</span> <span class="fu">sqrt</span>(<span class="dv">35</span>)); <span class="fu">c</span>(<span class="at">z =</span> z, <span class="at">critical =</span> <span class="sc">-</span><span class="fu">qnorm</span>(.<span class="dv">95</span>), <span class="at">p_value =</span> <span class="fu">pnorm</span>(z))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       z critical  p_value 
+ -1.2677  -1.6449   0.1024 </code></pre>
+</div>
+</div>
+<div class="question">
+<p>We failed to reject. Can we conclude that the soap is <strong>not</strong> effective? Why not?</p>
+</div>
+</section>
+<section id="example-7.7-empirical-type-i-error-rate" class="slide level2">
+<h2>Example 7.7: Empirical Type I Error Rate</h2>
+<p><span class="math inline">\(X_1,\dots,X_{20}\sim N(\mu,\sigma^2)\)</span>; test <span class="math inline">\(H_0:\mu = 500\)</span> vs.&nbsp;<span class="math inline">\(H_1:\mu&gt;500\)</span> at <span class="math inline">\(\alpha = 0.05\)</span> with <span class="math inline">\(T^* = (\bar X - 500)/(S/\sqrt{20})\sim t(19)\)</span>.</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">20</span>; alpha <span class="ot">&lt;-</span> .<span class="dv">05</span>; mu0 <span class="ot">&lt;-</span> <span class="dv">500</span>; sigma <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb20-2"><a aria-hidden="true" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="dv">10000</span>; p <span class="ot">&lt;-</span> <span class="fu">numeric</span>(m); <span class="fu">set.seed</span>(<span class="dv">4750</span>)</span>
+<span id="cb20-3"><a aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>m) {</span>
+<span id="cb20-4"><a aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n, mu0, sigma)</span>
+<span id="cb20-5"><a aria-hidden="true" tabindex="-1"></a>  ttest <span class="ot">&lt;-</span> <span class="fu">t.test</span>(x, <span class="at">alternative =</span> <span class="st">"greater"</span>, <span class="at">mu =</span> mu0)</span>
+<span id="cb20-6"><a aria-hidden="true" tabindex="-1"></a>  p[j] <span class="ot">&lt;-</span> ttest<span class="sc">$</span>p.value</span>
+<span id="cb20-7"><a aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb20-8"><a aria-hidden="true" tabindex="-1"></a>p.hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(p <span class="sc">&lt;</span> alpha)</span>
+<span id="cb20-9"><a aria-hidden="true" tabindex="-1"></a>se.hat <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(p.hat <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> p.hat) <span class="sc">/</span> m)</span>
+<span id="cb20-10"><a aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(p.hat, se.hat)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.05400 0.00226</code></pre>
+</div>
+</div>
+<ul>
+<li>The empirical Type I error rate should be within about <span class="math inline">\(2\sqrt{\alpha(1-\alpha)/m}\)</span> of <span class="math inline">\(\alpha\)</span>.</li>
+</ul>
+</section>
+<section id="is-the-t-test-robust-type-i-error-under-skewed-data" class="slide level2">
+<h2>Is the <span class="math inline">\(t\)</span> Test Robust? Type I Error Under Skewed Data</h2>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">4750</span>); m <span class="ot">&lt;-</span> <span class="dv">5000</span></span>
+<span id="cb22-2"><a aria-hidden="true" tabindex="-1"></a><span class="fu">sapply</span>(<span class="fu">c</span>(<span class="at">normal =</span> <span class="st">"norm"</span>, <span class="at">exponential =</span> <span class="st">"exp"</span>, <span class="at">lognormal =</span> <span class="st">"lnorm"</span>), <span class="cf">function</span>(dist) {</span>
+<span id="cb22-3"><a aria-hidden="true" tabindex="-1"></a>  <span class="fu">mean</span>(<span class="fu">replicate</span>(m, {</span>
+<span id="cb22-4"><a aria-hidden="true" tabindex="-1"></a>    x <span class="ot">&lt;-</span> <span class="cf">switch</span>(dist, <span class="at">norm =</span> <span class="fu">rnorm</span>(<span class="dv">20</span>, <span class="dv">1</span>), <span class="at">exp =</span> <span class="fu">rexp</span>(<span class="dv">20</span>, <span class="dv">1</span>), <span class="at">lnorm =</span> <span class="fu">rlnorm</span>(<span class="dv">20</span>, <span class="dv">0</span>, <span class="dv">1</span>) <span class="sc">/</span> <span class="fu">exp</span>(.<span class="dv">5</span>))</span>
+<span id="cb22-5"><a aria-hidden="true" tabindex="-1"></a>    <span class="fu">t.test</span>(x, <span class="at">mu =</span> <span class="dv">1</span>, <span class="at">alternative =</span> <span class="st">"greater"</span>)<span class="sc">$</span>p.value <span class="sc">&lt;</span> .<span class="dv">05</span></span>
+<span id="cb22-6"><a aria-hidden="true" tabindex="-1"></a>  }))</span>
+<span id="cb22-7"><a aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     normal exponential   lognormal 
+     0.0570      0.0168      0.0100 </code></pre>
+</div>
+</div>
+<aside class="notes">
+<ul>
+<li>All three populations have mean 1. The one-sided t test is conservative for right-skewed data in the upper tail here; check the lower-tail test too.</li>
+</ul>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="example-7.8-skewness-test-of-normality" class="slide level2">
+<h2>Example 7.8: Skewness Test of Normality</h2>
+<p><span class="math display">\[
+\sqrt{b_1} = \frac{\frac1n\sum(X_i - \bar X)^3}{\left(\frac1n\sum(X_i-\bar X)^2\right)^{3/2}},\qquad \sqrt{b_1}\approx N\!\left(0, \frac6n\right) \text{ under normality.}
+\]</span></p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a aria-hidden="true" tabindex="-1"></a>sk <span class="ot">&lt;-</span> <span class="cf">function</span>(x) { xbar <span class="ot">&lt;-</span> <span class="fu">mean</span>(x); m3 <span class="ot">&lt;-</span> <span class="fu">mean</span>((x <span class="sc">-</span> xbar)<span class="sc">^</span><span class="dv">3</span>); m2 <span class="ot">&lt;-</span> <span class="fu">mean</span>((x <span class="sc">-</span> xbar)<span class="sc">^</span><span class="dv">2</span>); m3 <span class="sc">/</span> m2<span class="sc">^</span><span class="fl">1.5</span> }</span>
+<span id="cb24-2"><a aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">10</span>, <span class="dv">20</span>, <span class="dv">30</span>, <span class="dv">50</span>, <span class="dv">100</span>, <span class="dv">500</span>)</span>
+<span id="cb24-3"><a aria-hidden="true" tabindex="-1"></a>cv <span class="ot">&lt;-</span> <span class="fu">qnorm</span>(.<span class="dv">975</span>, <span class="dv">0</span>, <span class="fu">sqrt</span>(<span class="dv">6</span> <span class="sc">/</span> n))                                  <span class="co"># asymptotic critical values</span></span>
+<span id="cb24-4"><a aria-hidden="true" tabindex="-1"></a>cv.exact <span class="ot">&lt;-</span> <span class="fu">qnorm</span>(.<span class="dv">975</span>, <span class="dv">0</span>, <span class="fu">sqrt</span>(<span class="dv">6</span> <span class="sc">*</span> (n <span class="sc">-</span> <span class="dv">2</span>) <span class="sc">/</span> ((n <span class="sc">+</span> <span class="dv">1</span>) <span class="sc">*</span> (n <span class="sc">+</span> <span class="dv">3</span>))))  <span class="co"># using the finite-sample variance</span></span>
+<span id="cb24-5"><a aria-hidden="true" tabindex="-1"></a>p.reject <span class="ot">&lt;-</span> p.reject.exact <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">length</span>(n)); m <span class="ot">&lt;-</span> <span class="dv">10000</span>; <span class="fu">set.seed</span>(<span class="dv">4750</span>)</span>
+<span id="cb24-6"><a aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(n)) {</span>
+<span id="cb24-7"><a aria-hidden="true" tabindex="-1"></a>  sktests <span class="ot">&lt;-</span> <span class="fu">replicate</span>(m, <span class="fu">sk</span>(<span class="fu">rnorm</span>(n[i])))</span>
+<span id="cb24-8"><a aria-hidden="true" tabindex="-1"></a>  p.reject[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">abs</span>(sktests) <span class="sc">&gt;=</span> cv[i])</span>
+<span id="cb24-9"><a aria-hidden="true" tabindex="-1"></a>  p.reject.exact[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">abs</span>(sktests) <span class="sc">&gt;=</span> cv.exact[i])</span>
+<span id="cb24-10"><a aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb24-11"><a aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(n, <span class="at">asymptotic =</span> p.reject, <span class="at">finite_sample =</span> p.reject.exact)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                 [,1]    [,2]    [,3]    [,4]     [,5]     [,6]
+n             10.0000 20.0000 30.0000 50.0000 100.0000 500.0000
+asymptotic     0.0120  0.0267  0.0349  0.0413   0.0476   0.0463
+finite_sample  0.0527  0.0529  0.0532  0.0517   0.0530   0.0477</code></pre>
+</div>
+</div>
+</section>
+<section id="power-of-a-test" class="slide level2">
+<h2>Power of a Test</h2>
+<p><span class="math display">\[
+\pi(\theta) = P_\theta(\text{reject } H_0),\qquad \text{power at } \theta_1\in\Theta_1 = 1 - \beta(\theta_1).
+\]</span></p>
+<p>What increases power? Smaller <span class="math inline">\(\sigma\)</span>; <span class="math inline">\(\mu_a\)</span> farther from <span class="math inline">\(\mu_0\)</span>; <strong>larger <span class="math inline">\(n\)</span></strong>; larger <span class="math inline">\(\alpha\)</span>.</p>
+<div class="algo">
+<p><strong>Empirical power</strong> at <span class="math inline">\(\theta_1\)</span>: for <span class="math inline">\(j = 1,\dots,m\)</span>, generate a sample under <span class="math inline">\(\theta = \theta_1\)</span>, perform the test, record <span class="math inline">\(I_j = 1\)</span> if <span class="math inline">\(H_0\)</span> is rejected. Then <span class="math inline">\(\hat\pi(\theta_1) = \bar I\)</span>, with <span class="math inline">\(\widehat{\mathrm{se}} = \sqrt{\hat\pi(1-\hat\pi)/m}\)</span>.</p>
+</div>
+</section>
+<section id="example-7.9-empirical-power-of-the-t-test" class="slide level2">
+<h2>Example 7.9: Empirical Power of the <span class="math inline">\(t\)</span> Test</h2>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">20</span>; m <span class="ot">&lt;-</span> <span class="dv">1000</span>; mu0 <span class="ot">&lt;-</span> <span class="dv">500</span>; sigma <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb26-2"><a aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">seq</span>(<span class="dv">450</span>, <span class="dv">650</span>, <span class="dv">10</span>)); M <span class="ot">&lt;-</span> <span class="fu">length</span>(mu)</span>
+<span id="cb26-3"><a aria-hidden="true" tabindex="-1"></a>power <span class="ot">&lt;-</span> <span class="fu">numeric</span>(M); <span class="fu">set.seed</span>(<span class="dv">4750</span>)</span>
+<span id="cb26-4"><a aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>M) {</span>
+<span id="cb26-5"><a aria-hidden="true" tabindex="-1"></a>  pvalues <span class="ot">&lt;-</span> <span class="fu">replicate</span>(m, <span class="at">expr =</span> {</span>
+<span id="cb26-6"><a aria-hidden="true" tabindex="-1"></a>    x <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n, <span class="at">mean =</span> mu[i], <span class="at">sd =</span> sigma)</span>
+<span id="cb26-7"><a aria-hidden="true" tabindex="-1"></a>    <span class="fu">t.test</span>(x, <span class="at">alternative =</span> <span class="st">"greater"</span>, <span class="at">mu =</span> mu0)<span class="sc">$</span>p.value })</span>
+<span id="cb26-8"><a aria-hidden="true" tabindex="-1"></a>  power[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(pvalues <span class="sc">&lt;=</span> .<span class="dv">05</span>)</span>
+<span id="cb26-9"><a aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb26-10"><a aria-hidden="true" tabindex="-1"></a>se <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(power <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> power) <span class="sc">/</span> m)</span>
+<span id="cb26-11"><a aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(mu, power, <span class="at">type =</span> <span class="st">"b"</span>, <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">ylim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="at">xlab =</span> <span class="fu">expression</span>(theta), <span class="at">ylab =</span> <span class="fu">expression</span>(<span class="fu">pi</span>(theta)))</span>
+<span id="cb26-12"><a aria-hidden="true" tabindex="-1"></a><span class="fu">arrows</span>(mu, power <span class="sc">-</span> <span class="dv">2</span> <span class="sc">*</span> se, mu, power <span class="sc">+</span> <span class="dv">2</span> <span class="sc">*</span> se, <span class="at">angle =</span> <span class="dv">90</span>, <span class="at">code =</span> <span class="dv">3</span>, <span class="at">length =</span> .<span class="dv">03</span>)</span>
+<span id="cb26-13"><a aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> mu0, <span class="at">lty =</span> <span class="dv">3</span>); <span class="fu">abline</span>(<span class="at">h =</span> .<span class="dv">05</span>, <span class="at">lty =</span> <span class="dv">3</span>)</span>
+<span id="cb26-14"><a aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(mu, <span class="dv">1</span> <span class="sc">-</span> <span class="fu">pt</span>(<span class="fu">qt</span>(.<span class="dv">95</span>, n <span class="sc">-</span> <span class="dv">1</span>), n <span class="sc">-</span> <span class="dv">1</span>, <span class="at">ncp =</span> (mu <span class="sc">-</span> mu0) <span class="sc">/</span> (sigma <span class="sc">/</span> <span class="fu">sqrt</span>(n))), <span class="at">col =</span> <span class="st">"red"</span>, <span class="at">lwd =</span> <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+
+</div>
+<img data-src="./images/13-mc-inference/unnamed-chunk-13-1.png" class="quarto-figure quarto-figure-center r-stretch" style="width:100.0%"><p>The red curve is the exact power from the noncentral <span class="math inline">\(t\)</span> distribution.</p>
+</section>
+<section id="choosing-the-sample-size" class="slide level2">
+<h2>Choosing the Sample Size</h2>
+<p>To detect <span class="math inline">\(\Delta = |\mu_a - \mu_0|\)</span> with power <span class="math inline">\(1-\beta\)</span> at level <span class="math inline">\(\alpha\)</span> (<span class="math inline">\(\sigma\)</span> known):</p>
+<p><span class="math display">\[
+\text{one-sided: } n = \sigma^2\frac{(z_\alpha + z_\beta)^2}{\Delta^2},\qquad \text{two-sided: } n = \sigma^2\frac{(z_{\alpha/2}+z_\beta)^2}{\Delta^2}.
+\]</span></p>
+<p><strong>Cereal boxes.</strong> Labeled 16 oz, filled with mean 16.37 oz, <span class="math inline">\(\sigma = 0.225\)</span>. Test <span class="math inline">\(H_0:\mu = 16.37\)</span> vs <span class="math inline">\(H_a:\mu&lt;16.37\)</span> at <span class="math inline">\(\alpha = .05\)</span>. How many boxes to detect <span class="math inline">\(\mu\le 16.27\)</span> with power 0.99?</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a aria-hidden="true" tabindex="-1"></a>n_req <span class="ot">&lt;-</span> <span class="fl">0.225</span><span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> (<span class="fu">qnorm</span>(.<span class="dv">95</span>) <span class="sc">+</span> <span class="fu">qnorm</span>(.<span class="dv">99</span>))<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> <span class="fl">0.10</span><span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb27-2"><a aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">n =</span> n_req, <span class="at">rounded_up =</span> <span class="fu">ceiling</span>(n_req))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>         n rounded_up 
+     79.84      80.00 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a aria-hidden="true" tabindex="-1"></a><span class="fu">power.t.test</span>(<span class="at">delta =</span> <span class="fl">0.10</span>, <span class="at">sd =</span> <span class="fl">0.225</span>, <span class="at">power =</span> <span class="fl">0.99</span>, <span class="at">type =</span> <span class="st">"one.sample"</span>, <span class="at">alternative =</span> <span class="st">"one.sided"</span>)<span class="sc">$</span>n</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 81.21</code></pre>
+</div>
+</div>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">4750</span>)      <span class="co"># check by simulation at n = 80</span></span>
+<span id="cb31-2"><a aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">replicate</span>(<span class="dv">10000</span>, { y <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">80</span>, <span class="fl">16.27</span>, .<span class="dv">225</span>); (<span class="fu">mean</span>(y) <span class="sc">-</span> <span class="fl">16.37</span>) <span class="sc">/</span> (.<span class="dv">225</span> <span class="sc">/</span> <span class="fu">sqrt</span>(<span class="dv">80</span>)) <span class="sc">&lt;</span> <span class="sc">-</span><span class="fu">qnorm</span>(.<span class="dv">95</span>) }))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.9868</code></pre>
+</div>
+</div>
+</section>
+<section id="example-7.10-power-of-the-skewness-test" class="slide level2">
+<h2>Example 7.10: Power of the Skewness Test</h2>
+<p>Against the contaminated normal <span class="math inline">\((1-\varepsilon)N(0,1) + \varepsilon N(0,100)\)</span>:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a aria-hidden="true" tabindex="-1"></a>alpha <span class="ot">&lt;-</span> .<span class="dv">1</span>; n <span class="ot">&lt;-</span> <span class="dv">30</span>; m <span class="ot">&lt;-</span> <span class="dv">2500</span></span>
+<span id="cb33-2"><a aria-hidden="true" tabindex="-1"></a>epsilon <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">seq</span>(<span class="dv">0</span>, .<span class="dv">15</span>, .<span class="dv">01</span>), <span class="fu">seq</span>(.<span class="dv">15</span>, <span class="dv">1</span>, .<span class="dv">05</span>)); N <span class="ot">&lt;-</span> <span class="fu">length</span>(epsilon)</span>
+<span id="cb33-3"><a aria-hidden="true" tabindex="-1"></a>pwr <span class="ot">&lt;-</span> <span class="fu">numeric</span>(N); cv <span class="ot">&lt;-</span> <span class="fu">qnorm</span>(<span class="dv">1</span> <span class="sc">-</span> alpha <span class="sc">/</span> <span class="dv">2</span>, <span class="dv">0</span>, <span class="fu">sqrt</span>(<span class="dv">6</span> <span class="sc">*</span> (n <span class="sc">-</span> <span class="dv">2</span>) <span class="sc">/</span> ((n <span class="sc">+</span> <span class="dv">1</span>) <span class="sc">*</span> (n <span class="sc">+</span> <span class="dv">3</span>))))</span>
+<span id="cb33-4"><a aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">4750</span>)</span>
+<span id="cb33-5"><a aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb33-6"><a aria-hidden="true" tabindex="-1"></a>  e <span class="ot">&lt;-</span> epsilon[j]</span>
+<span id="cb33-7"><a aria-hidden="true" tabindex="-1"></a>  sktests <span class="ot">&lt;-</span> <span class="fu">replicate</span>(m, { sigma <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">10</span>), <span class="at">replace =</span> <span class="cn">TRUE</span>, <span class="at">size =</span> n, <span class="at">prob =</span> <span class="fu">c</span>(<span class="dv">1</span> <span class="sc">-</span> e, e))</span>
+<span id="cb33-8"><a aria-hidden="true" tabindex="-1"></a>                            <span class="fu">as.integer</span>(<span class="fu">abs</span>(<span class="fu">sk</span>(<span class="fu">rnorm</span>(n, <span class="dv">0</span>, sigma))) <span class="sc">&gt;=</span> cv) })</span>
+<span id="cb33-9"><a aria-hidden="true" tabindex="-1"></a>  pwr[j] <span class="ot">&lt;-</span> <span class="fu">mean</span>(sktests)</span>
+<span id="cb33-10"><a aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb33-11"><a aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(epsilon, pwr, <span class="at">type =</span> <span class="st">"b"</span>, <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">xlab =</span> <span class="fu">bquote</span>(epsilon), <span class="at">ylim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="at">ylab =</span> <span class="st">"power"</span>)</span>
+<span id="cb33-12"><a aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> .<span class="dv">1</span>, <span class="at">lty =</span> <span class="dv">3</span>); se <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(pwr <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> pwr) <span class="sc">/</span> m)</span>
+<span id="cb33-13"><a aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(epsilon, pwr <span class="sc">+</span> <span class="dv">2</span> <span class="sc">*</span> se, <span class="at">lty =</span> <span class="dv">3</span>); <span class="fu">lines</span>(epsilon, pwr <span class="sc">-</span> <span class="dv">2</span> <span class="sc">*</span> se, <span class="at">lty =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+
+</div>
+<img data-src="./images/13-mc-inference/unnamed-chunk-16-1.png" class="quarto-figure quarto-figure-center r-stretch" style="width:100.0%"></section>
+<section id="example-7.11-comparing-tests-of-normality" class="slide level2">
+<h2>Example 7.11: Comparing Tests of Normality</h2>
+<p>Compare the skewness test with Shapiro-Wilk (<code>shapiro.test</code>) and the energy test (<code>energy::mvnorm.etest</code>).</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a aria-hidden="true" tabindex="-1"></a>alpha <span class="ot">&lt;-</span> .<span class="dv">1</span>; n <span class="ot">&lt;-</span> <span class="dv">30</span>; m <span class="ot">&lt;-</span> <span class="dv">1000</span>; eps <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, .<span class="dv">05</span>, .<span class="dv">1</span>, .<span class="dv">2</span>, .<span class="dv">5</span>)</span>
+<span id="cb34-2"><a aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">4750</span>)</span>
+<span id="cb34-3"><a aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">sapply</span>(eps, <span class="cf">function</span>(e) {</span>
+<span id="cb34-4"><a aria-hidden="true" tabindex="-1"></a>  r <span class="ot">&lt;-</span> <span class="fu">replicate</span>(m, {</span>
+<span id="cb34-5"><a aria-hidden="true" tabindex="-1"></a>    x <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n, <span class="dv">0</span>, <span class="fu">sample</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">10</span>), <span class="at">replace =</span> <span class="cn">TRUE</span>, <span class="at">size =</span> n, <span class="at">prob =</span> <span class="fu">c</span>(<span class="dv">1</span> <span class="sc">-</span> e, e)))</span>
+<span id="cb34-6"><a aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(<span class="at">skewness =</span> <span class="fu">abs</span>(<span class="fu">sk</span>(x)) <span class="sc">&gt;=</span> cv, <span class="at">shapiro =</span> <span class="fu">shapiro.test</span>(x)<span class="sc">$</span>p.value <span class="sc">&lt;=</span> alpha)</span>
+<span id="cb34-7"><a aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb34-8"><a aria-hidden="true" tabindex="-1"></a>  <span class="fu">rowMeans</span>(r)</span>
+<span id="cb34-9"><a aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb34-10"><a aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(res) <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"eps="</span>, eps); <span class="fu">round</span>(res, <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>         eps=0 eps=0.05 eps=0.1 eps=0.2 eps=0.5
+skewness 0.091    0.644   0.806   0.810   0.435
+shapiro  0.093    0.667   0.896   0.986   0.909</code></pre>
+</div>
+</div>
+<div class="tip">
+<p>With <code>energy</code> installed, add <code>energy::mvnorm.etest(x, R = 200)$p.value &lt;= alpha</code>: it is the most powerful of the three for this alternative (and costly, since it uses a bootstrap).</p>
+</div>
+</section>
+<section id="application-the-count-five-test-examples-7.12---7.16" class="slide level2">
+<h2>Application: The “Count Five” Test (Examples 7.12 - 7.16)</h2>
+<p>McGrath and Yeh (2005): to compare the <strong>spread</strong> of two samples, count the number of <em>extreme points</em> of each sample relative to the range of the other. Declare unequal variance if either count exceeds <strong>five</strong>.</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">4750</span>)</span>
+<span id="cb36-2"><a aria-hidden="true" tabindex="-1"></a>x1 <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">20</span>, <span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1</span>); x2 <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">20</span>, <span class="dv">0</span>, <span class="at">sd =</span> <span class="fl">1.5</span>)</span>
+<span id="cb36-3"><a aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">c</span>(x1, x2); group <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, <span class="at">each =</span> <span class="fu">length</span>(x1))</span>
+<span id="cb36-4"><a aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">1</span>, <span class="dv">1</span>)); <span class="fu">boxplot</span>(y <span class="sc">~</span> group, <span class="at">boxwex =</span> .<span class="dv">3</span>, <span class="at">xlim =</span> <span class="fu">c</span>(.<span class="dv">5</span>, <span class="fl">2.5</span>), <span class="at">horizontal =</span> <span class="cn">TRUE</span>); <span class="fu">points</span>(y, group)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a aria-hidden="true" tabindex="-1"></a>out1 <span class="ot">&lt;-</span> <span class="fu">sum</span>(x1 <span class="sc">&gt;</span> <span class="fu">max</span>(x2)) <span class="sc">+</span> <span class="fu">sum</span>(x1 <span class="sc">&lt;</span> <span class="fu">min</span>(x2)); out2 <span class="ot">&lt;-</span> <span class="fu">sum</span>(x2 <span class="sc">&gt;</span> <span class="fu">max</span>(x1)) <span class="sc">+</span> <span class="fu">sum</span>(x2 <span class="sc">&lt;</span> <span class="fu">min</span>(x1))</span>
+<span id="cb37-2"><a aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">out1 =</span> out1, <span class="at">out2 =</span> out2, <span class="at">max =</span> <span class="fu">max</span>(out1, out2))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>out1 out2  max 
+   0    8    8 </code></pre>
+</div>
+</div>
+<img data-src="./images/13-mc-inference/unnamed-chunk-18-1.png" class="quarto-figure quarto-figure-center r-stretch" style="width:100.0%"></section>
+<section id="examples-7.14---7.16-size-and-power-of-count-five" class="slide level2">
+<h2>Examples 7.14 - 7.16: Size and Power of Count Five</h2>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a aria-hidden="true" tabindex="-1"></a>count5test <span class="ot">&lt;-</span> <span class="cf">function</span>(x, y) {</span>
+<span id="cb39-2"><a aria-hidden="true" tabindex="-1"></a>  X <span class="ot">&lt;-</span> x <span class="sc">-</span> <span class="fu">mean</span>(x); Y <span class="ot">&lt;-</span> y <span class="sc">-</span> <span class="fu">mean</span>(y)</span>
+<span id="cb39-3"><a aria-hidden="true" tabindex="-1"></a>  outx <span class="ot">&lt;-</span> <span class="fu">sum</span>(X <span class="sc">&gt;</span> <span class="fu">max</span>(Y)) <span class="sc">+</span> <span class="fu">sum</span>(X <span class="sc">&lt;</span> <span class="fu">min</span>(Y))</span>
+<span id="cb39-4"><a aria-hidden="true" tabindex="-1"></a>  outy <span class="ot">&lt;-</span> <span class="fu">sum</span>(Y <span class="sc">&gt;</span> <span class="fu">max</span>(X)) <span class="sc">+</span> <span class="fu">sum</span>(Y <span class="sc">&lt;</span> <span class="fu">min</span>(X))</span>
+<span id="cb39-5"><a aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">as.integer</span>(<span class="fu">max</span>(<span class="fu">c</span>(outx, outy)) <span class="sc">&gt;</span> <span class="dv">5</span>))       <span class="co"># return 1 (reject) or 0 (do not reject H0)</span></span>
+<span id="cb39-6"><a aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb39-7"><a aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">4750</span>); m <span class="ot">&lt;-</span> <span class="dv">10000</span></span>
+<span id="cb39-8"><a aria-hidden="true" tabindex="-1"></a>size_equal_n   <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">replicate</span>(m, <span class="fu">count5test</span>(<span class="fu">rnorm</span>(<span class="dv">20</span>), <span class="fu">rnorm</span>(<span class="dv">20</span>))))</span>
+<span id="cb39-9"><a aria-hidden="true" tabindex="-1"></a>size_unequal_n <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">replicate</span>(m, <span class="fu">count5test</span>(<span class="fu">rnorm</span>(<span class="dv">20</span>), <span class="fu">rnorm</span>(<span class="dv">50</span>))))</span>
+<span id="cb39-10"><a aria-hidden="true" tabindex="-1"></a>power_sd1<span class="fl">.5</span>    <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">replicate</span>(m, <span class="fu">count5test</span>(<span class="fu">rnorm</span>(<span class="dv">20</span>, <span class="dv">0</span>, <span class="dv">1</span>), <span class="fu">rnorm</span>(<span class="dv">20</span>, <span class="dv">0</span>, <span class="fl">1.5</span>))))</span>
+<span id="cb39-11"><a aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">size_equal_n =</span> size_equal_n, <span class="at">size_unequal_n =</span> size_unequal_n, <span class="at">power_sd1.5 =</span> power_sd1<span class="fl">.5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  size_equal_n size_unequal_n    power_sd1.5 
+        0.0541         0.2919         0.3249 </code></pre>
+</div>
+</div>
+<div class="danger">
+<p>With unequal sample sizes the Count Five test does <strong>not</strong> control the Type I error rate at 0.0625. Monte Carlo reveals this immediately; a fix is a permutation version (Ch 10).</p>
+</div>
+</section>
+<section id="summary" class="slide level2">
+<h2>Summary</h2>
+<div class="instructions">
+<ul>
+<li>Monte Carlo estimation: replicate the procedure, summarize, and <strong>report the Monte Carlo SE</strong>.</li>
+<li>Empirical confidence level and Type I error rate check whether a procedure keeps its promises.</li>
+<li>Empirical power curves compare tests and choose sample sizes.</li>
+<li>Robustness: the <span class="math inline">\(t\)</span> test for <span class="math inline">\(\mu\)</span> is fairly robust; the <span class="math inline">\(\chi^2\)</span> interval for <span class="math inline">\(\sigma^2\)</span> is not.</li>
+</ul>
+</div>
+<div class="your-turn">
+<p>Estimate the power of the <span class="math inline">\(t\)</span> test and the Wilcoxon signed-rank test (<code>wilcox.test</code>) for <span class="math inline">\(n = 20\)</span> when the data are <span class="math inline">\(t(3)\)</span>-distributed with location <span class="math inline">\(\theta\in[0, 1.5]\)</span>. Which test would you recommend?</p>
+</div>
+
+
+</section></section>
+    </div>
+  <div class="quarto-auto-generated-content" style="display: none;">
+<p><img src="logo.png" class="slide-logo"></p>
+<div class="footer footer-default">
+<p><a href="https://mmadoliat.github.io/compstat-s27/">mmadoliat.github.io/compstat-s27</a></p>
+</div>
+</div></div>
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script>
+  <script src="../site_libs/revealjs/dist/reveal.js"></script>
+  <!-- reveal.js plugins -->
+  <script src="../site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.js"></script>
+  <script src="../site_libs/revealjs/plugin/pdf-export/pdfexport.js"></script>
+  <script src="../site_libs/revealjs/plugin/reveal-menu/menu.js"></script>
+  <script src="../site_libs/revealjs/plugin/reveal-menu/quarto-menu.js"></script>
+  <script src="../site_libs/revealjs/plugin/reveal-chalkboard/plugin.js"></script>
+  <script src="../site_libs/revealjs/plugin/quarto-support/support.js"></script>
+  
+
+  <script src="../site_libs/revealjs/plugin/notes/notes.js"></script>
+  <script src="../site_libs/revealjs/plugin/search/search.js"></script>
+  <script src="../site_libs/revealjs/plugin/zoom/zoom.js"></script>
+  <script src="../site_libs/revealjs/plugin/math/math.js"></script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script>
+
+  <script>
+
+      // Full list of configuration options available at:
+      // https://revealjs.com/config/
+      Reveal.initialize({
+'controlsAuto': true,
+'previewLinksAuto': false,
+'pdfSeparateFragments': false,
+'autoAnimateEasing': "ease",
+'autoAnimateDuration': 1,
+'autoAnimateUnmatched': true,
+'jumpToSlide': true,
+'menu': {"side":"left","useTextContentForMissingTitles":true,"markers":false,"loadIcons":false,"custom":[{"title":"Tools","icon":"<i class=\"fas fa-gear\"></i>","content":"<ul class=\"slide-menu-items\">\n<li class=\"slide-tool-item active\" data-item=\"0\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.fullscreen(event)\"><kbd>f</kbd> Fullscreen</a></li>\n<li class=\"slide-tool-item\" data-item=\"1\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.speakerMode(event)\"><kbd>s</kbd> Speaker View</a></li>\n<li class=\"slide-tool-item\" data-item=\"2\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>o</kbd> Slide Overview</a></li>\n<li class=\"slide-tool-item\" data-item=\"3\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.togglePdfExport(event)\"><kbd>e</kbd> PDF Export Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"4\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.toggleScrollView(event)\"><kbd>r</kbd> Scroll View Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"5\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.toggleChalkboard(event)\"><kbd>b</kbd> Toggle Chalkboard</a></li>\n<li class=\"slide-tool-item\" data-item=\"6\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.toggleNotesCanvas(event)\"><kbd>c</kbd> Toggle Notes Canvas</a></li>\n<li class=\"slide-tool-item\" data-item=\"7\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.downloadDrawings(event)\"><kbd>d</kbd> Download Drawings</a></li>\n<li class=\"slide-tool-item\" data-item=\"8\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.keyboardHelp(event)\"><kbd>?</kbd> Keyboard Help</a></li>\n</ul>"}],"openButton":true},
+'chalkboard': {"buttons":true},
+'smaller': false,
+ 
+        // Display controls in the bottom right corner
+        controls: false,
+
+        // Help the user learn the controls by providing hints, for example by
+        // bouncing the down arrow when they first encounter a vertical slide
+        controlsTutorial: false,
+
+        // Determines where controls appear, "edges" or "bottom-right"
+        controlsLayout: 'edges',
+
+        // Visibility rule for backwards navigation arrows; "faded", "hidden"
+        // or "visible"
+        controlsBackArrows: 'faded',
+
+        // Display a presentation progress bar
+        progress: true,
+
+        // Display the page number of the current slide
+        slideNumber: 'c/t',
+
+        // 'all', 'print', or 'speaker'
+        showSlideNumber: 'all',
+
+        // Add the current slide number to the URL hash so that reloading the
+        // page/copying the URL will return you to the same slide
+        hash: true,
+
+        // Start with 1 for the hash rather than 0
+        hashOneBasedIndex: false,
+
+        // Flags if we should monitor the hash and change slides accordingly
+        respondToHashChanges: true,
+
+        // Push each slide change to the browser history
+        history: true,
+
+        // Enable keyboard shortcuts for navigation
+        keyboard: true,
+
+        // Enable the slide overview mode
+        overview: true,
+
+        // Disables the default reveal.js slide layout (scaling and centering)
+        // so that you can use custom CSS layout
+        disableLayout: false,
+
+        // Vertical centering of slides
+        center: false,
+
+        // Enables touch navigation on devices with touch input
+        touch: true,
+
+        // Loop the presentation
+        loop: false,
+
+        // Change the presentation direction to be RTL
+        rtl: false,
+
+        // see https://revealjs.com/vertical-slides/#navigation-mode
+        navigationMode: 'linear',
+
+        // Randomizes the order of slides each time the presentation loads
+        shuffle: false,
+
+        // Turns fragments on and off globally
+        fragments: true,
+
+        // Flags whether to include the current fragment in the URL,
+        // so that reloading brings you to the same fragment position
+        fragmentInURL: false,
+
+        // Flags if the presentation is running in an embedded mode,
+        // i.e. contained within a limited portion of the screen
+        embedded: false,
+
+        // Flags if we should show a help overlay when the questionmark
+        // key is pressed
+        help: true,
+
+        // Flags if it should be possible to pause the presentation (blackout)
+        pause: true,
+
+        // Flags if speaker notes should be visible to all viewers
+        showNotes: false,
+
+        // Global override for autoplaying embedded media (null/true/false)
+        autoPlayMedia: null,
+
+        // Global override for preloading lazy-loaded iframes (null/true/false)
+        preloadIframes: null,
+
+        // Number of milliseconds between automatically proceeding to the
+        // next slide, disabled when set to 0, this value can be overwritten
+        // by using a data-autoslide attribute on your slides
+        autoSlide: 0,
+
+        // Stop auto-sliding after user input
+        autoSlideStoppable: true,
+
+        // Use this method for navigation when auto-sliding
+        autoSlideMethod: null,
+
+        // Specify the average time in seconds that you think you will spend
+        // presenting each slide. This is used to show a pacing timer in the
+        // speaker view
+        defaultTiming: null,
+
+        // Enable slide navigation via mouse wheel
+        mouseWheel: false,
+
+        // The display mode that will be used to show slides
+        display: 'block',
+
+        // Hide cursor if inactive
+        hideInactiveCursor: true,
+
+        // Time before the cursor is hidden (in ms)
+        hideCursorTime: 5000,
+
+        // Opens links in an iframe preview overlay
+        previewLinks: false,
+
+        // Transition style (none/fade/slide/convex/concave/zoom)
+        transition: 'none',
+
+        // Transition speed (default/fast/slow)
+        transitionSpeed: 'default',
+
+        // Transition style for full page slide backgrounds
+        // (none/fade/slide/convex/concave/zoom)
+        backgroundTransition: 'none',
+
+        // Number of slides away from the current that are visible
+        viewDistance: 3,
+
+        // Number of slides away from the current that are visible on mobile
+        // devices. It is advisable to set this to a lower number than
+        // viewDistance in order to save resources.
+        mobileViewDistance: 2,
+
+        // The "normal" size of the presentation, aspect ratio will be preserved
+        // when the presentation is scaled to fit different resolutions. Can be
+        // specified using percentage units.
+        width: 1800,
+
+        height: 1000,
+
+        // Factor of the display size that should remain empty around the content
+        margin: 5.0e-2,
+
+        math: {
+          mathjax: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js',
+          config: 'TeX-AMS_HTML-full',
+          tex2jax: {
+            inlineMath: [['\\(','\\)']],
+            displayMath: [['\\[','\\]']],
+            balanceBraces: true,
+            processEscapes: false,
+            processRefs: true,
+            processEnvironments: true,
+            preview: 'TeX',
+            skipTags: ['script','noscript','style','textarea','pre','code'],
+            ignoreClass: 'tex2jax_ignore',
+            processClass: 'tex2jax_process'
+          },
+        },
+
+        // reveal.js plugins
+        plugins: [QuartoLineHighlight, PdfExport, RevealMenu, RevealChalkboard, QuartoSupport,
+
+          RevealMath,
+          RevealNotes,
+          RevealSearch,
+          RevealZoom
+        ]
+      });
+    </script>
+    
+    <script>
+      // htmlwidgets need to know to resize themselves when slides are shown/hidden.
+      // Fire the "slideenter" event (handled by htmlwidgets.js) when the current
+      // slide changes (different for each slide format).
+      (function () {
+        // dispatch for htmlwidgets
+        function fireSlideEnter() {
+          const event = window.document.createEvent("Event");
+          event.initEvent("slideenter", true, true);
+          window.document.dispatchEvent(event);
+        }
+
+        function fireSlideChanged(previousSlide, currentSlide) {
+          fireSlideEnter();
+
+          // dispatch for shiny
+          if (window.jQuery) {
+            if (previousSlide) {
+              window.jQuery(previousSlide).trigger("hidden");
+            }
+            if (currentSlide) {
+              window.jQuery(currentSlide).trigger("shown");
+            }
+          }
+        }
+
+        // hookup for slidy
+        if (window.w3c_slidy) {
+          window.w3c_slidy.add_observer(function (slide_num) {
+            // slide_num starts at position 1
+            fireSlideChanged(null, w3c_slidy.slides[slide_num - 1]);
+          });
+        }
+
+      })();
+    </script>
+
+    <script id="quarto-html-after-body" type="application/javascript">
+      window.document.addEventListener("DOMContentLoaded", function (event) {
+        const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+        tabsets.forEach(function(tabset) {
+          const tabby = new Tabby('#' + tabset.id);
+        });
+        const isCodeAnnotation = (el) => {
+          for (const clz of el.classList) {
+            if (clz.startsWith('code-annotation-')) {                     
+              return true;
+            }
+          }
+          return false;
+        }
+        const onCopySuccess = function(e) {
+          // button target
+          const button = e.trigger;
+          // don't keep focus
+          button.blur();
+          // flash "checked"
+          button.classList.add('code-copy-button-checked');
+          var currentTitle = button.getAttribute("title");
+          button.setAttribute("title", "Copied!");
+          let tooltip;
+          if (window.bootstrap) {
+            button.setAttribute("data-bs-toggle", "tooltip");
+            button.setAttribute("data-bs-placement", "left");
+            button.setAttribute("data-bs-title", "Copied!");
+            tooltip = new bootstrap.Tooltip(button, 
+              { trigger: "manual", 
+                customClass: "code-copy-button-tooltip",
+                offset: [0, -8]});
+            tooltip.show();    
+          }
+          setTimeout(function() {
+            if (tooltip) {
+              tooltip.hide();
+              button.removeAttribute("data-bs-title");
+              button.removeAttribute("data-bs-toggle");
+              button.removeAttribute("data-bs-placement");
+            }
+            button.setAttribute("title", currentTitle);
+            button.classList.remove('code-copy-button-checked');
+          }, 1000);
+          // clear code selection
+          e.clearSelection();
+        }
+        const getTextToCopy = function(trigger) {
+          const outerScaffold = trigger.parentElement.cloneNode(true);
+          const codeEl = outerScaffold.querySelector('code');
+          for (const childEl of codeEl.children) {
+            if (isCodeAnnotation(childEl)) {
+              childEl.remove();
+            }
+          }
+          return codeEl.innerText;
+        }
+        const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+          text: getTextToCopy
+        });
+        clipboard.on('success', onCopySuccess);
+        if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+          const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+            text: getTextToCopy,
+            container: window.document.getElementById('quarto-embedded-source-code-modal')
+          });
+          clipboardModal.on('success', onCopySuccess);
+        }
+          var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+          var mailtoRegex = new RegExp(/^mailto:/);
+            var filterRegex = new RegExp("https:\/\/mmadoliat\.github\.io\/compstat-s27\/");
+          var isInternal = (href) => {
+              return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+          }
+          // Inspect non-navigation links and adorn them if external
+         var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+          for (var i=0; i<links.length; i++) {
+            const link = links[i];
+            if (!isInternal(link.href)) {
+              // undo the damage that might have been done by quarto-nav.js in the case of
+              // links that we want to consider external
+              if (link.dataset.originalHref !== undefined) {
+                link.href = link.dataset.originalHref;
+              }
+            }
+          }
+        function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+          const config = {
+            allowHTML: true,
+            maxWidth: 500,
+            delay: 100,
+            arrow: false,
+            appendTo: function(el) {
+                return el.closest('section.slide') || el.parentElement;
+            },
+            interactive: true,
+            interactiveBorder: 10,
+            theme: 'light-border',
+            placement: 'bottom-start',
+          };
+          if (contentFn) {
+            config.content = contentFn;
+          }
+          if (onTriggerFn) {
+            config.onTrigger = onTriggerFn;
+          }
+          if (onUntriggerFn) {
+            config.onUntrigger = onUntriggerFn;
+          }
+            config['offset'] = [0,0];
+            config['maxWidth'] = 700;
+          window.tippy(el, config); 
+        }
+        const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+        for (var i=0; i<noterefs.length; i++) {
+          const ref = noterefs[i];
+          tippyHover(ref, function() {
+            // use id or data attribute instead here
+            let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+            try { href = new URL(href).hash; } catch {}
+            const id = href.replace(/^#\/?/, "");
+            const note = window.document.getElementById(id);
+            if (note) {
+              return note.innerHTML;
+            } else {
+              return "";
+            }
+          });
+        }
+        const findCites = (el) => {
+          const parentEl = el.parentElement;
+          if (parentEl) {
+            const cites = parentEl.dataset.cites;
+            if (cites) {
+              return {
+                el,
+                cites: cites.split(' ')
+              };
+            } else {
+              return findCites(el.parentElement)
+            }
+          } else {
+            return undefined;
+          }
+        };
+        var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+        for (var i=0; i<bibliorefs.length; i++) {
+          const ref = bibliorefs[i];
+          const citeInfo = findCites(ref);
+          if (citeInfo) {
+            tippyHover(citeInfo.el, function() {
+              var popup = window.document.createElement('div');
+              citeInfo.cites.forEach(function(cite) {
+                var citeDiv = window.document.createElement('div');
+                citeDiv.classList.add('hanging-indent');
+                citeDiv.classList.add('csl-entry');
+                var biblioDiv = window.document.getElementById('ref-' + cite);
+                if (biblioDiv) {
+                  citeDiv.innerHTML = biblioDiv.innerHTML;
+                }
+                popup.appendChild(citeDiv);
+              });
+              return popup.innerHTML;
+            });
+          }
+        }
+      });
+      </script>
+    
+
+</body></html>
